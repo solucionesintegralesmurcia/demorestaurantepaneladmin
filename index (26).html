@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Casa Bracero — Plantilla de restaurante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+<style>
+  body { margin: 0; font-family: 'Inter', sans-serif; background: #0E1D1B; }
+  .font-display { font-family: 'Fraunces', serif; }
+  .font-mono { font-family: 'IBM Plex Mono', monospace; }
+  .dot-leader { flex: 1; border-bottom: 2px dotted var(--gold); margin: 0 10px; height: 1px; align-self: flex-end; opacity: 0.7; }
+  .tile-band { height: 12px; background: repeating-linear-gradient(45deg, var(--teal) 0 6px, var(--gold) 6px 12px, var(--brick) 12px 18px); opacity: 0.9; }
+  input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 0 0 2px var(--gold); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+// ---------- iconos (emoji, sin dependencias externas) ----------
+const Icon = ({ children, size = 14 }) => (
+  <span style={{ fontSize: size, lineHeight: 1, display: "inline-block" }}>{children}</span>
+);
+
+// ---------- datos de ejemplo ----------
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const seedCategories = [
+  { id: "c1", name: "Para Picar", items: [
+    { id: "p1", name: "Jamón ibérico de bellota", desc: "Cortado a cuchillo, con pan de cristal", price: 18.5 },
+    { id: "p2", name: "Croquetas de jamón", desc: "6 unidades, receta de la abuela", price: 9.5 },
+    { id: "p3", name: "Pimientos de Padrón", desc: "Fritos con sal en escamas", price: 7.0 },
+  ]},
+  { id: "c2", name: "Principales", items: [
+    { id: "p4", name: "Solomillo al Pedro Ximénez", desc: "Con patatas panaderas", price: 19.9 },
+    { id: "p5", name: "Bacalao confitado", desc: "Sobre pisto de temporada", price: 17.5 },
+  ]},
+  { id: "c3", name: "Arroces", items: [
+    { id: "p6", name: "Arroz del señoret", desc: "Mínimo 2 personas", price: 16.0 },
+    { id: "p7", name: "Paella valenciana", desc: "Mínimo 2 personas", price: 15.5 },
+  ]},
+  { id: "c4", name: "Postres", items: [
+    { id: "p8", name: "Torrija caramelizada", desc: "Con helado de vainilla", price: 6.5 },
+    { id: "p9", name: "Tarta de queso", desc: "Estilo vasco, horneada al día", price: 6.0 },
+  ]},
+  { id: "c5", name: "Bebidas", items: [
+    { id: "p10", name: "Copa de vino D.O.", desc: "Selección de la casa", price: 4.5 },
+    { id: "p11", name: "Vermut de grifo", desc: "Con sifón y aceituna", price: 3.5 },
+  ]},
+];
+
+const seedBusiness = {
+  name: "Casa Bracero",
+  tagline: "Cocina de brasa y producto de mercado",
+  address: "Calle Mayor 14, 28013 Madrid",
+  phone: "+34 912 345 678",
+  whatsapp: "+34612345678",
+  hours: "Martes a Domingo · 13:00–16:30 y 20:00–23:30",
+  instagram: "@casabracero",
+  logoInitial: "CB",
+};
+
+const seedSpecialMenus = [
+  { id: "m1", title: "Menú de Nochevieja", date: "2026-12-31", desc: "5 pases + copa de cava de bienvenida", slug: "nochevieja-2026", active: true },
+];
+
+const seedCustomers = [
+  { id: "u1", name: "Marta Ruiz", phone: "+34611222333", city: "Madrid", province: "Madrid", language: "es" },
+  { id: "u2", name: "John Smith", phone: "+447911123456", city: "Londres", province: "—", language: "en" },
+  { id: "u3", name: "Claire Dubois", phone: "+33611223344", city: "Valencia", province: "Valencia", language: "fr" },
+  { id: "u4", name: "Luca Bianchi", phone: "+39333123456", city: "Sevilla", province: "Sevilla", language: "es" },
+];
+
+const LANGS = { es: "Español", en: "English", fr: "Français", de: "Deutsch" };
+
+const messageTemplates = {
+  es: {
+    review: (name, biz) => `Hola ${name} 👋 Somos el equipo de ${biz}. ¡Gracias por visitarnos! Si tienes un minuto, nos ayudaría muchísimo que nos dejaras una reseña. ¡Un saludo!`,
+    offer: (name, biz) => `Hola ${name} 👋 Desde ${biz} queremos avisarte de una oferta especial esta semana solo para ti. ¿Te apetece pasarte?`,
+  },
+  en: {
+    review: (name, biz) => `Hi ${name} 👋 This is the team at ${biz}. Thanks for visiting us! If you have a minute, we'd really appreciate a quick review. Cheers!`,
+    offer: (name, biz) => `Hi ${name} 👋 We at ${biz} have a special offer just for you this week. Fancy stopping by?`,
+  },
+  fr: {
+    review: (name, biz) => `Bonjour ${name} 👋 Ici l'équipe de ${biz}. Merci de votre visite ! Un avis nous ferait très plaisir. À bientôt !`,
+    offer: (name, biz) => `Bonjour ${name} 👋 Chez ${biz}, nous avons une offre spéciale rien que pour vous cette semaine. Ça vous tente ?`,
+  },
+  de: {
+    review: (name, biz) => `Hallo ${name} 👋 Hier ist das Team von ${biz}. Danke für deinen Besuch! Über eine kurze Bewertung würden wir uns sehr freuen. Bis bald!`,
+    offer: (name, biz) => `Hallo ${name} 👋 Bei ${biz} gibt es diese Woche ein besonderes Angebot nur für dich. Hast du Lust vorbeizukommen?`,
+  },
+};
+
+const buildWaLink = (phone, text) =>
+  `https://wa.me/${phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(text)}`;
+
+const qrUrl = (slug) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&color=16-30-2E&bgcolor=241-234-217&data=${encodeURIComponent(
+    `https://tu-restaurante.example.com/menu/${slug}`
+  )}`;
+
+const fmt = (n) => `${Number(n).toFixed(2).replace(".", ",")} €`;
+
+// ---------- componente principal ----------
+function RestaurantTemplateDemo() {
+  const [mode, setMode] = useState("public");
+  const [adminTab, setAdminTab] = useState("negocio");
+
+  const [business, setBusiness] = useState(seedBusiness);
+  const [categories, setCategories] = useState(seedCategories);
+  const [specialMenus, setSpecialMenus] = useState(seedSpecialMenus);
+  const [customers, setCustomers] = useState(seedCustomers);
+
+  const [activeCat, setActiveCat] = useState(seedCategories[0].id);
+  const [pricePct, setPricePct] = useState("");
+  const [newCatName, setNewCatName] = useState("");
+  const [copiedSlug, setCopiedSlug] = useState("");
+
+  const [menuForm, setMenuForm] = useState({ title: "", date: "", desc: "" });
+  const [custForm, setCustForm] = useState({ name: "", phone: "", city: "", province: "", language: "es" });
+
+  const activeSpecial = specialMenus.find((m) => m.active);
+
+  const setBiz = (field, value) => setBusiness((b) => ({ ...b, [field]: value }));
+
+  const addCategory = () => {
+    if (!newCatName.trim()) return;
+    const id = uid();
+    setCategories((cs) => [...cs, { id, name: newCatName.trim(), items: [] }]);
+    setNewCatName("");
+    setActiveCat(id);
+  };
+
+  const deleteCategory = (catId) => setCategories((cs) => cs.filter((c) => c.id !== catId));
+
+  const addProduct = (catId) =>
+    setCategories((cs) =>
+      cs.map((c) => c.id === catId ? { ...c, items: [...c.items, { id: uid(), name: "Nuevo producto", desc: "", price: 0 }] } : c)
+    );
+
+  const updateProduct = (catId, prodId, field, value) =>
+    setCategories((cs) =>
+      cs.map((c) => c.id === catId ? { ...c, items: c.items.map((it) => it.id === prodId ? { ...it, [field]: value } : it) } : c)
+    );
+
+  const deleteProduct = (catId, prodId) =>
+    setCategories((cs) => cs.map((c) => c.id === catId ? { ...c, items: c.items.filter((it) => it.id !== prodId) } : c));
+
+  const applyBulkPct = () => {
+    const pct = parseFloat(pricePct);
+    if (Number.isNaN(pct)) return;
+    setCategories((cs) => cs.map((c) => ({ ...c, items: c.items.map((it) => ({ ...it, price: Math.round(it.price * (1 + pct / 100) * 100) / 100 })) })));
+  };
+
+  const addSpecialMenu = () => {
+    if (!menuForm.title.trim()) return;
+    const slug = menuForm.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    setSpecialMenus((ms) => [...ms, { id: uid(), title: menuForm.title, date: menuForm.date, desc: menuForm.desc, slug: slug || uid(), active: false }]);
+    setMenuForm({ title: "", date: "", desc: "" });
+  };
+
+  const toggleActiveMenu = (id) => setSpecialMenus((ms) => ms.map((m) => ({ ...m, active: m.id === id ? !m.active : false })));
+  const deleteSpecialMenu = (id) => setSpecialMenus((ms) => ms.filter((m) => m.id !== id));
+
+  const copyLink = (slug) => {
+    const link = `https://tu-restaurante.example.com/menu/${slug}`;
+    try {
+      navigator.clipboard.writeText(link);
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(""), 1500);
+    } catch (e) {}
+  };
+
+  const addCustomer = () => {
+    if (!custForm.name.trim() || !custForm.phone.trim()) return;
+    setCustomers((cs) => [...cs, { id: uid(), ...custForm }]);
+    setCustForm({ name: "", phone: "", city: "", province: "", language: "es" });
+  };
+
+  const deleteCustomer = (id) => setCustomers((cs) => cs.filter((c) => c.id !== id));
+
+  const sendWa = (customer, kind) => {
+    const t = messageTemplates[customer.language] || messageTemplates.es;
+    const text = kind === "review" ? t.review(customer.name, business.name) : t.offer(customer.name, business.name);
+    window.open(buildWaLink(customer.phone, text), "_blank");
+  };
+
+  return (
+    <div
+      style={{ "--ink": "#16302E", "--paper": "#F1EAD9", "--gold": "#C89B3C", "--brick": "#9C3B2E", "--teal": "#2F6F6B", "--charcoal": "#22201B", minHeight: "100vh" }}
+      className="w-full p-3 md:p-6"
+    >
+      <div className="max-w-5xl mx-auto mb-4 flex gap-2">
+        <button onClick={() => setMode("public")} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition"
+          style={{ background: mode === "public" ? "var(--gold)" : "#1c332f", color: mode === "public" ? "#16302E" : "#cfd8d6" }}>
+          <Icon>👁</Icon> Vista del cliente
+        </button>
+        <button onClick={() => setMode("admin")} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition"
+          style={{ background: mode === "admin" ? "var(--gold)" : "#1c332f", color: mode === "admin" ? "#16302E" : "#cfd8d6" }}>
+          <Icon>🧭</Icon> Panel de administración
+        </button>
+      </div>
+
+      <div className="max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl" style={{ background: "var(--paper)" }}>
+        {mode === "public" ? (
+          <PublicSite business={business} categories={categories} activeSpecial={activeSpecial} activeCat={activeCat} setActiveCat={setActiveCat} />
+        ) : (
+          <AdminPanel
+            adminTab={adminTab} setAdminTab={setAdminTab}
+            business={business} setBiz={setBiz}
+            categories={categories} addCategory={addCategory} deleteCategory={deleteCategory}
+            newCatName={newCatName} setNewCatName={setNewCatName}
+            addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct}
+            pricePct={pricePct} setPricePct={setPricePct} applyBulkPct={applyBulkPct}
+            specialMenus={specialMenus} menuForm={menuForm} setMenuForm={setMenuForm}
+            addSpecialMenu={addSpecialMenu} toggleActiveMenu={toggleActiveMenu} deleteSpecialMenu={deleteSpecialMenu}
+            copyLink={copyLink} copiedSlug={copiedSlug}
+            customers={customers} custForm={custForm} setCustForm={setCustForm}
+            addCustomer={addCustomer} deleteCustomer={deleteCustomer} sendWa={sendWa}
+          />
+        )}
+      </div>
+
+      <p className="max-w-5xl mx-auto text-center mt-3 text-xs" style={{ color: "#6d8481" }}>
+        Prototipo de demostración — los cambios se guardan solo en esta sesión del navegador. Los envíos de WhatsApp abren una conversación real con el mensaje ya escrito.
+      </p>
+    </div>
+  );
+}
+
+function PublicSite({ business, categories, activeSpecial, activeCat, setActiveCat }) {
+  const currentCat = categories.find((c) => c.id === activeCat) || categories[0];
+  return (
+    <div>
+      <div className="flex items-center gap-2 px-4 py-2 text-xs" style={{ background: "#0E1D1B", color: "#8fa6a2" }}>
+        <div className="flex gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#e0605080" }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#e8c05680" }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#6bbf7680" }} />
+        </div>
+        <span className="font-mono ml-2 truncate">www.{business.name.toLowerCase().replace(/\s+/g, "")}.com</span>
+      </div>
+      <div className="tile-band" />
+
+      <header className="px-6 md:px-10 py-8 flex items-center justify-between gap-4" style={{ background: "var(--ink)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center font-display font-bold text-xl" style={{ background: "var(--gold)", color: "var(--ink)" }}>
+            {business.logoInitial}
+          </div>
+          <div>
+            <h1 className="font-display text-2xl md:text-3xl font-bold" style={{ color: "var(--paper)" }}>{business.name}</h1>
+            <p className="text-sm" style={{ color: "#b9c9c6" }}>{business.tagline}</p>
+          </div>
+        </div>
+        <a href={`https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`} target="_blank" rel="noreferrer"
+          className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style={{ background: "var(--gold)", color: "var(--ink)" }}>
+          <Icon>💬</Icon> Reservar por WhatsApp
+        </a>
+      </header>
+
+      <div className="flex flex-wrap gap-4 px-6 md:px-10 py-3 text-sm" style={{ background: "#0d2422", color: "#cfe0dd" }}>
+        <span className="flex items-center gap-1.5"><Icon>📍</Icon> {business.address}</span>
+        <span className="flex items-center gap-1.5"><Icon>📞</Icon> {business.phone}</span>
+        <span className="flex items-center gap-1.5"><Icon>🕒</Icon> {business.hours}</span>
+        <span className="flex items-center gap-1.5"><Icon>📷</Icon> {business.instagram}</span>
+      </div>
+
+      {activeSpecial && (
+        <div className="mx-6 md:mx-10 mt-6 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center" style={{ background: "#fff8ea", border: "2px solid var(--gold)" }}>
+          <Icon size={22}>✨</Icon>
+          <div className="flex-1 text-center md:text-left">
+            <p className="font-display font-bold text-lg" style={{ color: "var(--ink)" }}>{activeSpecial.title}</p>
+            <p className="text-sm" style={{ color: "#4c433a" }}>{activeSpecial.desc} {activeSpecial.date && `· ${activeSpecial.date}`}</p>
+          </div>
+          <img src={qrUrl(activeSpecial.slug)} alt="QR menú especial" className="w-20 h-20 rounded-lg" />
+        </div>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto px-6 md:px-10 py-6">
+        {categories.map((c) => (
+          <button key={c.id} onClick={() => setActiveCat(c.id)} className="px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition"
+            style={{ background: currentCat.id === c.id ? "var(--brick)" : "transparent", color: currentCat.id === c.id ? "#fff" : "var(--ink)", border: `1.5px solid ${currentCat.id === c.id ? "var(--brick)" : "#c9bfa4"}` }}>
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-6 md:px-10 pb-10">
+        <h2 className="font-display text-xl font-semibold mb-4" style={{ color: "var(--ink)" }}>{currentCat?.name}</h2>
+        <div className="space-y-3">
+          {currentCat?.items.length ? currentCat.items.map((it) => (
+            <div key={it.id} className="flex items-end">
+              <div>
+                <p className="font-semibold" style={{ color: "var(--charcoal)" }}>{it.name}</p>
+                {it.desc && <p className="text-xs" style={{ color: "#7a7062" }}>{it.desc}</p>}
+              </div>
+              <div className="dot-leader" />
+              <p className="font-mono font-semibold" style={{ color: "var(--brick)" }}>{fmt(it.price)}</p>
+            </div>
+          )) : <p className="text-sm" style={{ color: "#8a8072" }}>Todavía no hay productos en esta categoría.</p>}
+        </div>
+      </div>
+
+      <div className="tile-band" />
+      <footer className="px-6 md:px-10 py-6 text-center text-sm" style={{ background: "var(--ink)", color: "#9fb2af" }}>
+        {business.address} · {business.phone} · {business.instagram}
+      </footer>
+    </div>
+  );
+}
+
+function AdminPanel(props) {
+  const {
+    adminTab, setAdminTab, business, setBiz,
+    categories, addCategory, deleteCategory, newCatName, setNewCatName,
+    addProduct, updateProduct, deleteProduct, pricePct, setPricePct, applyBulkPct,
+    specialMenus, menuForm, setMenuForm, addSpecialMenu, toggleActiveMenu, deleteSpecialMenu,
+    copyLink, copiedSlug, customers, custForm, setCustForm, addCustomer, deleteCustomer, sendWa,
+  } = props;
+
+  const tabs = [
+    { id: "negocio", label: "Datos del negocio", icon: "🏬" },
+    { id: "carta", label: "Carta y precios", icon: "🍴" },
+    { id: "especiales", label: "Menús especiales", icon: "✨" },
+    { id: "clientes", label: "Clientes (CRM)", icon: "👥" },
+  ];
+
+  return (
+    <div className="flex flex-col md:flex-row min-h-[600px]" style={{ background: "#fbf8f0" }}>
+      <nav className="flex md:flex-col gap-1 p-3 md:w-56 overflow-x-auto" style={{ background: "var(--ink)" }}>
+        {tabs.map((t) => (
+          <button key={t.id} onClick={() => setAdminTab(t.id)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap text-left transition"
+            style={{ background: adminTab === t.id ? "var(--gold)" : "transparent", color: adminTab === t.id ? "var(--ink)" : "#cfe0dd" }}>
+            <Icon>{t.icon}</Icon> {t.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="flex-1 p-5 md:p-8">
+        {adminTab === "negocio" && <BusinessTab business={business} setBiz={setBiz} />}
+        {adminTab === "carta" && (
+          <MenuTab categories={categories} addCategory={addCategory} deleteCategory={deleteCategory} newCatName={newCatName} setNewCatName={setNewCatName}
+            addProduct={addProduct} updateProduct={updateProduct} deleteProduct={deleteProduct} pricePct={pricePct} setPricePct={setPricePct} applyBulkPct={applyBulkPct} />
+        )}
+        {adminTab === "especiales" && (
+          <SpecialMenusTab specialMenus={specialMenus} menuForm={menuForm} setMenuForm={setMenuForm} addSpecialMenu={addSpecialMenu}
+            toggleActiveMenu={toggleActiveMenu} deleteSpecialMenu={deleteSpecialMenu} copyLink={copyLink} copiedSlug={copiedSlug} business={business} />
+        )}
+        {adminTab === "clientes" && (
+          <CustomersTab customers={customers} custForm={custForm} setCustForm={setCustForm} addCustomer={addCustomer} deleteCustomer={deleteCustomer} sendWa={sendWa} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block mb-3">
+      <span className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "#7a7062" }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+const inputClass = "w-full px-3 py-2 rounded-lg text-sm border";
+const inputStyle = { borderColor: "#d9cfb4", color: "var(--charcoal)", background: "#fff" };
+
+function BusinessTab({ business, setBiz }) {
+  return (
+    <div className="max-w-lg">
+      <h2 className="font-display text-xl font-bold mb-4" style={{ color: "var(--ink)" }}>Datos del negocio</h2>
+      <p className="text-sm mb-5" style={{ color: "#7a7062" }}>Estos datos se reflejan al instante en la vista del cliente.</p>
+      <Field label="Nombre del restaurante"><input className={inputClass} style={inputStyle} value={business.name} onChange={(e) => setBiz("name", e.target.value)} /></Field>
+      <Field label="Eslogan"><input className={inputClass} style={inputStyle} value={business.tagline} onChange={(e) => setBiz("tagline", e.target.value)} /></Field>
+      <Field label="Dirección"><input className={inputClass} style={inputStyle} value={business.address} onChange={(e) => setBiz("address", e.target.value)} /></Field>
+      <Field label="Teléfono"><input className={inputClass} style={inputStyle} value={business.phone} onChange={(e) => setBiz("phone", e.target.value)} /></Field>
+      <Field label="WhatsApp (con prefijo país, sin espacios)"><input className={inputClass} style={inputStyle} value={business.whatsapp} onChange={(e) => setBiz("whatsapp", e.target.value)} /></Field>
+      <Field label="Horario"><input className={inputClass} style={inputStyle} value={business.hours} onChange={(e) => setBiz("hours", e.target.value)} /></Field>
+      <Field label="Instagram"><input className={inputClass} style={inputStyle} value={business.instagram} onChange={(e) => setBiz("instagram", e.target.value)} /></Field>
+      <Field label="Iniciales del logo"><input className={inputClass} style={inputStyle} value={business.logoInitial} maxLength={3} onChange={(e) => setBiz("logoInitial", e.target.value.toUpperCase())} /></Field>
+    </div>
+  );
+}
+
+function MenuTab({ categories, addCategory, deleteCategory, newCatName, setNewCatName, addProduct, updateProduct, deleteProduct, pricePct, setPricePct, applyBulkPct }) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 className="font-display text-xl font-bold" style={{ color: "var(--ink)" }}>Carta y precios</h2>
+          <p className="text-sm" style={{ color: "#7a7062" }}>Añade productos, edita precios uno a uno o sube toda la carta a la vez.</p>
+        </div>
+        <div className="flex items-end gap-2">
+          <Field label="Subir toda la carta (%)">
+            <input type="number" className={inputClass} style={{ ...inputStyle, width: 110 }} value={pricePct} onChange={(e) => setPricePct(e.target.value)} placeholder="ej. 5" />
+          </Field>
+          <button onClick={applyBulkPct} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold mb-3" style={{ background: "var(--brick)", color: "#fff" }}>
+            <Icon>%</Icon> Aplicar
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        <input className={inputClass} style={{ ...inputStyle, maxWidth: 240 }} placeholder="Nueva categoría (ej. Postres)" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+        <button onClick={addCategory} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: "var(--gold)", color: "var(--ink)" }}>
+          <Icon>➕</Icon> Categoría
+        </button>
+      </div>
+
+      <div className="space-y-6">
+        {categories.map((c) => (
+          <div key={c.id} className="rounded-xl p-4" style={{ background: "#fff", border: "1px solid #e6ddc4" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-semibold text-lg" style={{ color: "var(--ink)" }}>{c.name}</h3>
+              <button onClick={() => deleteCategory(c.id)} className="text-xs flex items-center gap-1" style={{ color: "var(--brick)" }}>
+                <Icon>🗑</Icon> Eliminar categoría
+              </button>
+            </div>
+            <div className="space-y-2">
+              {c.items.map((it) => (
+                <div key={it.id} className="grid grid-cols-12 gap-2 items-center">
+                  <input className={inputClass + " col-span-4"} style={inputStyle} value={it.name} onChange={(e) => updateProduct(c.id, it.id, "name", e.target.value)} />
+                  <input className={inputClass + " col-span-4"} style={inputStyle} value={it.desc} placeholder="descripción" onChange={(e) => updateProduct(c.id, it.id, "desc", e.target.value)} />
+                  <input type="number" step="0.10" className={inputClass + " col-span-2 font-mono"} style={inputStyle} value={it.price} onChange={(e) => updateProduct(c.id, it.id, "price", parseFloat(e.target.value) || 0)} />
+                  <button onClick={() => deleteProduct(c.id, it.id)} className="col-span-2 flex items-center justify-center gap-1 text-xs py-2 rounded-lg" style={{ color: "var(--brick)", background: "#fbeee9" }}>
+                    <Icon>🗑</Icon>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => addProduct(c.id)} className="mt-3 flex items-center gap-1.5 text-sm font-semibold" style={{ color: "var(--teal)" }}>
+              <Icon>➕</Icon> Añadir producto
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SpecialMenusTab({ specialMenus, menuForm, setMenuForm, addSpecialMenu, toggleActiveMenu, deleteSpecialMenu, copyLink, copiedSlug }) {
+  return (
+    <div>
+      <h2 className="font-display text-xl font-bold mb-1" style={{ color: "var(--ink)" }}>Menús especiales</h2>
+      <p className="text-sm mb-5" style={{ color: "#7a7062" }}>Crea menús para fechas señaladas con logo, fecha y un QR único listo para imprimir en la mesa.</p>
+
+      <div className="rounded-xl p-4 mb-6 max-w-lg" style={{ background: "#fff", border: "1px solid #e6ddc4" }}>
+        <Field label="Título del menú"><input className={inputClass} style={inputStyle} value={menuForm.title} onChange={(e) => setMenuForm((f) => ({ ...f, title: e.target.value }))} placeholder="ej. Menú de San Valentín" /></Field>
+        <Field label="Fecha"><input type="date" className={inputClass} style={inputStyle} value={menuForm.date} onChange={(e) => setMenuForm((f) => ({ ...f, date: e.target.value }))} /></Field>
+        <Field label="Descripción"><textarea className={inputClass} style={inputStyle} rows={2} value={menuForm.desc} onChange={(e) => setMenuForm((f) => ({ ...f, desc: e.target.value }))} placeholder="ej. 4 pases + maridaje" /></Field>
+        <button onClick={addSpecialMenu} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: "var(--gold)", color: "var(--ink)" }}>
+          <Icon>➕</Icon> Crear menú especial
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {specialMenus.map((m) => (
+          <div key={m.id} className="rounded-xl p-4 flex gap-4" style={{ background: "#fff", border: m.active ? "2px solid var(--gold)" : "1px solid #e6ddc4" }}>
+            <img src={qrUrl(m.slug)} alt={`QR ${m.title}`} className="w-24 h-24 rounded-lg flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-display font-semibold" style={{ color: "var(--ink)" }}>{m.title}</p>
+                {m.active && <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "var(--gold)", color: "var(--ink)" }}>Activo en la web</span>}
+              </div>
+              <p className="text-xs mt-0.5" style={{ color: "#7a7062" }}>{m.desc} {m.date && `· ${m.date}`}</p>
+              <div className="flex items-center gap-3 mt-2 text-xs">
+                <button onClick={() => toggleActiveMenu(m.id)} className="font-semibold" style={{ color: "var(--teal)" }}>{m.active ? "Desactivar" : "Activar en la web"}</button>
+                <button onClick={() => copyLink(m.slug)} className="flex items-center gap-1 font-semibold" style={{ color: "var(--teal)" }}>
+                  <Icon>{copiedSlug === m.slug ? "✓" : "⧉"}</Icon> Copiar enlace
+                </button>
+                <button onClick={() => deleteSpecialMenu(m.id)} className="flex items-center gap-1 font-semibold" style={{ color: "var(--brick)" }}><Icon>🗑</Icon> Eliminar</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {!specialMenus.length && <p className="text-sm" style={{ color: "#8a8072" }}>Todavía no has creado ningún menú especial.</p>}
+      </div>
+    </div>
+  );
+}
+
+function CustomersTab({ customers, custForm, setCustForm, addCustomer, deleteCustomer, sendWa }) {
+  return (
+    <div>
+      <h2 className="font-display text-xl font-bold mb-1" style={{ color: "var(--ink)" }}>Clientes (CRM)</h2>
+      <p className="text-sm mb-5" style={{ color: "#7a7062" }}>Guarda los datos de tus clientes y contáctalos por WhatsApp en su idioma para pedir reseñas o enviar ofertas.</p>
+
+      <div className="rounded-xl p-4 mb-6" style={{ background: "#fff", border: "1px solid #e6ddc4" }}>
+        <div className="grid md:grid-cols-5 gap-2 items-end">
+          <Field label="Nombre"><input className={inputClass} style={inputStyle} value={custForm.name} onChange={(e) => setCustForm((f) => ({ ...f, name: e.target.value }))} /></Field>
+          <Field label="Teléfono"><input className={inputClass} style={inputStyle} value={custForm.phone} placeholder="+34..." onChange={(e) => setCustForm((f) => ({ ...f, phone: e.target.value }))} /></Field>
+          <Field label="Ciudad"><input className={inputClass} style={inputStyle} value={custForm.city} onChange={(e) => setCustForm((f) => ({ ...f, city: e.target.value }))} /></Field>
+          <Field label="Provincia"><input className={inputClass} style={inputStyle} value={custForm.province} onChange={(e) => setCustForm((f) => ({ ...f, province: e.target.value }))} /></Field>
+          <Field label="Idioma">
+            <select className={inputClass} style={inputStyle} value={custForm.language} onChange={(e) => setCustForm((f) => ({ ...f, language: e.target.value }))}>
+              {Object.entries(LANGS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </Field>
+        </div>
+        <button onClick={addCustomer} className="mt-3 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: "var(--gold)", color: "var(--ink)" }}>
+          <Icon>➕</Icon> Añadir cliente
+        </button>
+      </div>
+
+      <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6ddc4" }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ background: "var(--ink)", color: "#cfe0dd" }}>
+              <th className="text-left px-3 py-2 font-semibold">Nombre</th>
+              <th className="text-left px-3 py-2 font-semibold">Teléfono</th>
+              <th className="text-left px-3 py-2 font-semibold">Ciudad / Provincia</th>
+              <th className="text-left px-3 py-2 font-semibold">🌐 Idioma</th>
+              <th className="text-left px-3 py-2 font-semibold">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((c, i) => (
+              <tr key={c.id} style={{ background: i % 2 ? "#fbf8f0" : "#fff" }}>
+                <td className="px-3 py-2 font-medium" style={{ color: "var(--charcoal)" }}>{c.name}</td>
+                <td className="px-3 py-2 font-mono" style={{ color: "#4c433a" }}>{c.phone}</td>
+                <td className="px-3 py-2" style={{ color: "#4c433a" }}>{c.city}{c.province && c.province !== "—" ? ` / ${c.province}` : ""}</td>
+                <td className="px-3 py-2" style={{ color: "#4c433a" }}>{LANGS[c.language] || c.language}</td>
+                <td className="px-3 py-2">
+                  <div className="flex gap-2">
+                    <button onClick={() => sendWa(c, "review")} title="Pedir reseña" className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold" style={{ background: "#eaf3ec", color: "var(--teal)" }}>
+                      <Icon>⭐</Icon> Reseña
+                    </button>
+                    <button onClick={() => sendWa(c, "offer")} title="Enviar oferta" className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold" style={{ background: "#fdf1e0", color: "var(--brick)" }}>
+                      <Icon>🏷</Icon> Oferta
+                    </button>
+                    <button onClick={() => deleteCustomer(c.id)} className="p-1 rounded-lg" style={{ background: "#fbeee9", color: "var(--brick)" }}>
+                      <Icon>🗑</Icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<RestaurantTemplateDemo />);
+</script>
+</body>
+</html>
