@@ -104,7 +104,7 @@ const buildWaLink = (phone, text) =>
   `https://wa.me/${phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(text)}`;
 
 const qrUrl = (slug) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&color=16-30-2E&bgcolor=241-234-217&data=${encodeURIComponent(
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&color=16302E&bgcolor=F1EAD9&data=${encodeURIComponent(
     `https://tu-restaurante.example.com/menu/${slug}`
   )}`;
 
@@ -173,11 +173,15 @@ function RestaurantTemplateDemo() {
 
   const copyLink = (slug) => {
     const link = `https://tu-restaurante.example.com/menu/${slug}`;
-    try {
-      navigator.clipboard.writeText(link);
-      setCopiedSlug(slug);
-      setTimeout(() => setCopiedSlug(""), 1500);
-    } catch (e) {}
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(
+        () => {
+          setCopiedSlug(slug);
+          setTimeout(() => setCopiedSlug(""), 1500);
+        },
+        () => {}
+      );
+    }
   };
 
   const addCustomer = () => {
