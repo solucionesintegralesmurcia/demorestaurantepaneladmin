@@ -30,11 +30,23 @@
   .object-cover { object-fit: cover; }
   .object-fit-contain { object-fit: contain; }
   .italic { font-style: italic; }
-  .uppercase-tiny { text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; font-weight: 700; }
+  .uppercase-tiny { text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; font-weight: 700; color: var(--gold); }
   .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .gallery-thumb { transition: transform 0.35s ease; }
   .gallery-thumb:hover { transform: scale(1.035); }
   .stat-num { font-family: 'Fraunces', serif; font-weight: 700; font-size: 2rem; color: var(--gold); }
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+  .bottom-0 { bottom: 0; }
+  .left-0 { left: 0; }
+  .right-0 { right: 0; }
+  .gap-10 { gap: 2.5rem; }
+  .gap-12 { gap: 3rem; }
+  .rounded-3xl { border-radius: 1.5rem; }
+  .tracking-tight { letter-spacing: -0.02em; }
+  .neg-mt-8 { margin-top: -2rem; }
+  .capsule-btn { transition: transform 0.15s ease; }
+  .capsule-btn:hover { transform: translateY(-2px); }
   .pt-12 { padding-top: 3rem; }
   .pb-6 { padding-bottom: 1.5rem; }
   .gap-8 { gap: 2rem; }
@@ -849,12 +861,15 @@ function RestaurantTemplateDemo() {
   };
   return h("div", {
     style: {
-      "--ink": "#16302E",
-      "--paper": "#F1EAD9",
-      "--gold": "#C89B3C",
+      "--ink": "#1C1B18",
+      "--paper": "#F6F1E6",
+      "--gold": "#B8863B",
       "--brick": "#9C3B2E",
       "--teal": "#2F6F6B",
       "--charcoal": "#22201B",
+      "--muted": "#6B6459",
+      "--card": "#FFFFFF",
+      "--border": "#E7DFCF",
       minHeight: "100vh"
     }
   }, mode === "public" ? h(PublicSite, {
@@ -1077,65 +1092,75 @@ function PublicSite({
   const go = id => () => setPage(id);
   let content;
   if (page === "inicio") {
-    content = h("section", {
-      className: "px-6 md:px-10 py-20 md:py-32 text-center",
-      style: business.photo ? {
-        backgroundImage: `linear-gradient(rgba(15,32,30,0.72), rgba(15,32,30,0.82)), url(${business.photo})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center"
-      } : {
-        background: "var(--ink)"
-      }
+    content = h("div", null, h("section", {
+      className: "px-6 md:px-10 pt-14 pb-20 grid md:grid-cols-2 gap-10 items-center max-w-6xl mx-auto"
+    }, h("div", {
+      className: "text-center md:text-left"
     }, business.tagline && h("p", {
-      className: "uppercase-tiny mb-4",
-      style: {
-        color: "var(--gold)"
-      }
+      className: "uppercase-tiny mb-3"
     }, business.tagline), banner.offerActive && banner.offerText && h("div", {
-      className: "inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-bold",
+      className: "inline-block mb-3 px-4 py-1.5 rounded-full text-xs font-bold",
       style: {
-        background: "var(--brick)",
+        background: "var(--gold)",
         color: "#fff"
       }
     }, "🔥 ", banner.offerText), h("h1", {
-      className: "font-display italic text-4xl md:text-6xl font-bold mb-4",
+      className: "font-display tracking-tight text-4xl md:text-6xl font-bold mb-3",
       style: {
-        color: "var(--paper)"
+        color: "var(--ink)"
       }
-    }, heroTitle), h("div", {
-      className: "mx-auto mb-5",
+    }, heroTitle), heroSubtitle && h("p", {
+      className: "font-display italic text-lg md:text-xl mb-6",
       style: {
-        width: 56,
-        height: 2,
-        background: "var(--gold)"
-      }
-    }), heroSubtitle && h("p", {
-      className: "text-base md:text-lg mb-8 max-w-xl mx-auto",
-      style: {
-        color: "#cfe0dd"
+        color: "var(--muted)"
       }
     }, heroSubtitle), h("div", {
-      className: "flex flex-wrap gap-3 justify-center"
+      className: "flex flex-wrap gap-3 justify-center md:justify-start"
     }, h("button", {
-      onClick: go("carta"),
+      onClick: go("reservas"),
       className: "px-6 py-3 rounded-full text-sm font-semibold",
       style: {
         background: "var(--gold)",
-        color: "var(--ink)"
+        color: "#fff"
       }
-    }, "Ver carta"), h("button", {
-      onClick: go("reservas"),
+    }, "📞 Reservar mesa"), h("button", {
+      onClick: go("carta"),
       className: "px-6 py-3 rounded-full text-sm font-semibold border-2",
       style: {
         borderColor: "var(--gold)",
-        color: "var(--paper)",
+        color: "var(--ink)",
         background: "transparent"
       }
-    }, "Reservar mesa")), activeSpecial && h("div", {
-      className: "mt-8 max-w-2xl mx-auto rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center text-left",
+    }, "Ver la carta"))), h("div", {
+      className: "relative rounded-3xl overflow-hidden shadow",
       style: {
-        background: "#fff8ea",
-        border: "2px solid var(--gold)"
+        height: 340
+      }
+    }, business.photo ? h("img", {
+      src: business.photo,
+      alt: business.name,
+      className: "w-full h-full object-cover"
+    }) : h("div", {
+      className: "w-full h-full flex items-center justify-center",
+      style: {
+        background: "var(--border)",
+        color: "var(--muted)"
+      }
+    }, "Sube una foto de portada desde \u2018Datos del negocio\u2019"), business.photo && h("div", {
+      className: "absolute bottom-0 left-0 right-0 px-4 py-3",
+      style: {
+        background: "linear-gradient(transparent, rgba(0,0,0,0.55))"
+      }
+    }, h("p", {
+      className: "uppercase-tiny",
+      style: {
+        color: "#fff"
+      }
+    }, business.name)))), activeSpecial && h("div", {
+      className: "max-w-2xl mx-auto rounded-xl p-4 mb-10 flex flex-col md:flex-row gap-4 items-center text-left",
+      style: {
+        background: "var(--card)",
+        border: `1px solid var(--border)`
       }
     }, h(Icon, {
       size: 22
@@ -1149,7 +1174,7 @@ function PublicSite({
     }, activeSpecial.title), h("p", {
       className: "text-sm",
       style: {
-        color: "#4c433a"
+        color: "var(--muted)"
       }
     }, activeSpecial.desc, " ", activeSpecial.date && `· ${activeSpecial.date}`)), activeSpecial.photo && h("img", {
       src: activeSpecial.photo,
@@ -1159,51 +1184,89 @@ function PublicSite({
       src: qrUrl(menuTargetUrl(activeSpecial)),
       alt: "QR menú especial",
       className: "w-20 h-20 rounded-lg"
-    })));
+    })),
+    // capsula flotante
+    h("div", {
+      className: "flex justify-center mb-4"
+    }, h("div", {
+      className: "flex gap-2 p-2 rounded-full shadow",
+      style: {
+        background: "var(--card)",
+        border: `1px solid var(--border)`
+      }
+    }, h("a", {
+      href: `tel:${business.phone.replace(/[^\d+]/g, "")}`,
+      className: "capsule-btn flex flex-col items-center justify-center rounded-full text-xs font-bold uppercase",
+      style: {
+        width: 76,
+        height: 76,
+        background: "var(--gold)",
+        color: "#fff"
+      }
+    }, h(Icon, {
+      size: 18
+    }, "📞"), "Llamar"), h("a", {
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`,
+      target: "_blank",
+      rel: "noreferrer",
+      className: "capsule-btn flex flex-col items-center justify-center rounded-full text-xs font-bold uppercase",
+      style: {
+        width: 76,
+        height: 76,
+        background: "var(--paper)",
+        color: "var(--ink)"
+      }
+    }, h(Icon, {
+      size: 18
+    }, "📍"), "Cómo llegar"), h("button", {
+      onClick: go("carta"),
+      className: "capsule-btn flex flex-col items-center justify-center rounded-full text-xs font-bold uppercase",
+      style: {
+        width: 76,
+        height: 76,
+        background: "var(--paper)",
+        color: "var(--ink)",
+        border: "none",
+        cursor: "pointer"
+      }
+    }, h(Icon, {
+      size: 18
+    }, "📖"), "Carta"))));
   } else if (page === "quienes") {
     content = h("section", {
       className: "px-6 md:px-10 py-16"
     }, h("p", {
-      className: "uppercase-tiny text-center mb-2",
-      style: {
-        color: "var(--brick)"
-      }
+      className: "uppercase-tiny text-center mb-2"
     }, "Nuestra historia"), about.photo ? h("img", {
       src: about.photo,
       alt: about.title,
-      className: "w-full max-w-3xl mx-auto h-64 md:h-80 object-cover rounded-2xl mb-8"
+      className: "w-full max-w-3xl mx-auto h-64 md:h-80 object-cover rounded-3xl mb-8 shadow"
     }) : h("div", {
-      className: "w-full max-w-3xl mx-auto h-64 md:h-80 rounded-2xl flex items-center justify-center mb-8",
+      className: "w-full max-w-3xl mx-auto h-64 md:h-80 rounded-3xl flex items-center justify-center mb-8",
       style: {
-        background: "#e6ddc4",
-        color: "#7a7062"
+        background: "var(--border)",
+        color: "var(--muted)"
       }
     }, "Sin foto todavía"), h("div", {
       className: "max-w-2xl mx-auto text-center"
     }, h("h2", {
-      className: "font-display italic text-2xl md:text-3xl font-bold mb-4",
+      className: "font-display text-2xl md:text-3xl font-bold mb-4",
       style: {
         color: "var(--ink)"
       }
     }, about.title), h("p", {
       className: "text-sm md:text-base leading-relaxed",
       style: {
-        color: "#4c433a"
+        color: "var(--muted)"
       }
     }, about.text)));
   } else if (page === "carta") {
     content = h("section", {
-      className: "px-6 md:px-10 py-16",
-      style: {
-        background: "#fbf8f0"
-      }
+      className: "px-6 md:px-10 py-16"
     }, h("p", {
-      className: "uppercase-tiny text-center mb-2",
-      style: {
-        color: "var(--brick)"
-      }
+      className: "uppercase-tiny text-center mb-2"
     }, "Carta"), h("h2", {
-      className: "font-display italic text-2xl md:text-3xl font-bold mb-6 text-center",
+      className: "font-display text-2xl md:text-3xl font-bold mb-6 text-center",
       style: {
         color: "var(--ink)"
       }
@@ -1214,12 +1277,16 @@ function PublicSite({
       onClick: () => setActiveCat(c.id),
       className: "px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition",
       style: {
-        background: currentCat.id === c.id ? "var(--brick)" : "transparent",
+        background: currentCat.id === c.id ? "var(--gold)" : "var(--card)",
         color: currentCat.id === c.id ? "#fff" : "var(--ink)",
-        border: `1.5px solid ${currentCat.id === c.id ? "var(--brick)" : "#c9bfa4"}`
+        border: `1.5px solid ${currentCat.id === c.id ? "var(--gold)" : "var(--border)"}`
       }
     }, c.name))), h("div", {
-      className: "max-w-2xl mx-auto mt-6"
+      className: "max-w-2xl mx-auto mt-6 rounded-2xl p-5",
+      style: {
+        background: "var(--card)",
+        border: `1px solid var(--border)`
+      }
     }, currentCat?.photo && h("img", {
       src: currentCat.photo,
       alt: currentCat.name,
@@ -1241,50 +1308,47 @@ function PublicSite({
     }), h("div", null, h("p", {
       className: "font-semibold",
       style: {
-        color: "var(--charcoal)"
+        color: "var(--ink)"
       }
     }, it.name), it.desc && h("p", {
       className: "text-xs",
       style: {
-        color: "#7a7062"
+        color: "var(--muted)"
       }
     }, it.desc)), h("div", {
       className: "dot-leader"
     }), h("p", {
       className: "font-mono font-semibold",
       style: {
-        color: "var(--brick)"
+        color: "var(--gold)"
       }
     }, fmt(it.price)))) : h("p", {
       className: "text-sm",
       style: {
-        color: "#8a8072"
+        color: "var(--muted)"
       }
     }, "Todavía no hay productos en esta categoría."))));
   } else if (page === "galeria") {
     content = h("section", {
       className: "px-6 md:px-10 py-16 max-w-5xl mx-auto"
     }, h("p", {
-      className: "uppercase-tiny text-center mb-2",
-      style: {
-        color: "var(--brick)"
-      }
+      className: "uppercase-tiny text-center mb-2"
     }, "Galería"), h("h2", {
-      className: "font-display italic text-2xl md:text-3xl font-bold mb-8 text-center",
+      className: "font-display text-2xl md:text-3xl font-bold mb-8 text-center",
       style: {
         color: "var(--ink)"
       }
     }, "Lo que sale de la cocina"), gallery.length === 0 ? h("p", {
       className: "text-sm text-center",
       style: {
-        color: "#8a8072"
+        color: "var(--muted)"
       }
     }, "Todavía no hay fotos en la galería.") : h("div", {
       className: "grid grid-cols-2 md:grid-cols-3 gap-4"
     }, gallery.map(img => h("div", {
       key: img.id
     }, h("div", {
-      className: "rounded-xl overflow-hidden",
+      className: "rounded-2xl overflow-hidden shadow",
       style: {
         height: 180
       }
@@ -1295,26 +1359,23 @@ function PublicSite({
     })), img.caption && h("p", {
       className: "italic text-xs mt-2 text-center",
       style: {
-        color: "#7a7062"
+        color: "var(--muted)"
       }
     }, img.caption)))));
   } else if (page === "reservas") {
     content = h("section", {
       className: "px-6 md:px-10 py-16 max-w-lg mx-auto"
     }, h("p", {
-      className: "uppercase-tiny text-center mb-2",
-      style: {
-        color: "var(--brick)"
-      }
+      className: "uppercase-tiny text-center mb-2"
     }, "Reservas"), h("h2", {
-      className: "font-display italic text-2xl md:text-3xl font-bold mb-2 text-center",
+      className: "font-display text-2xl md:text-3xl font-bold mb-2 text-center",
       style: {
         color: "var(--ink)"
       }
     }, "Reserva tu mesa"), h("p", {
       className: "text-sm text-center mb-6",
       style: {
-        color: "#7a7062"
+        color: "var(--muted)"
       }
     }, "Rellena el formulario y te confirmamos la disponibilidad."), h(ReservationForm, {
       business: business,
@@ -1324,19 +1385,18 @@ function PublicSite({
     content = h("section", {
       className: "px-6 md:px-10 py-16 max-w-lg mx-auto text-center"
     }, h("p", {
-      className: "uppercase-tiny mb-2",
-      style: {
-        color: "var(--brick)"
-      }
+      className: "uppercase-tiny mb-2"
     }, "Horario & Ubicación"), h("h2", {
-      className: "font-display italic text-2xl md:text-3xl font-bold mb-6",
+      className: "font-display text-2xl md:text-3xl font-bold mb-6",
       style: {
         color: "var(--ink)"
       }
     }, "Contacto"), h("div", {
-      className: "space-y-2 text-sm",
+      className: "space-y-2 text-sm rounded-2xl p-6",
       style: {
-        color: "#4c433a"
+        color: "var(--muted)",
+        background: "var(--card)",
+        border: `1px solid var(--border)`
       }
     }, h("p", null, "📍 ", business.address), h("p", null, "📞 ", business.phone), h("p", null, "🕒 ", business.hours), h("p", null, "📷 ", business.instagram)), h("a", {
       href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
@@ -1345,7 +1405,7 @@ function PublicSite({
       className: "inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-full text-sm font-semibold",
       style: {
         background: "var(--gold)",
-        color: "var(--ink)"
+        color: "#fff"
       }
     }, h(Icon, null, "💬"), " Escríbenos por WhatsApp"));
   }
@@ -1359,7 +1419,8 @@ function PublicSite({
   h("nav", {
     className: "sticky top-0 z-20 flex items-center justify-between gap-4 px-4 md:px-10 py-3",
     style: {
-      background: "var(--ink)"
+      background: "var(--paper)",
+      borderBottom: `1px solid var(--border)`
     }
   }, h("button", {
     onClick: go("inicio"),
@@ -1372,13 +1433,13 @@ function PublicSite({
   }, h("div", {
     className: "w-10 h-10 rounded-full flex items-center justify-center font-display font-bold",
     style: {
-      background: "var(--gold)",
-      color: "var(--ink)"
+      background: "var(--ink)",
+      color: "var(--gold)"
     }
   }, business.logoInitial), h("span", {
     className: "font-display font-bold text-lg",
     style: {
-      color: "var(--paper)"
+      color: "var(--ink)"
     }
   }, business.name)), h("div", {
     className: "hidden md:flex items-center gap-5 text-sm font-medium"
@@ -1386,27 +1447,28 @@ function PublicSite({
     key: p.id,
     onClick: go(p.id),
     style: {
-      color: page === p.id ? "var(--gold)" : "#cfe0dd",
+      color: page === p.id ? "var(--gold)" : "var(--ink)",
       background: "none",
       border: "none",
       cursor: "pointer",
       fontWeight: page === p.id ? 700 : 500
     }
-  }, p.label))), h("a", {
-    href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
-    target: "_blank",
-    rel: "noreferrer",
+  }, p.label))), h("button", {
+    onClick: go("reservas"),
     className: "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold",
     style: {
       background: "var(--gold)",
-      color: "var(--ink)"
+      color: "#fff",
+      border: "none",
+      cursor: "pointer"
     }
-  }, h(Icon, null, "💬"), " Reservar")),
+  }, "Reservar")),
   // paginas (móvil)
   h("div", {
     className: "flex md:hidden gap-2 overflow-x-auto px-4 py-2",
     style: {
-      background: "#0d2422"
+      background: "var(--paper)",
+      borderBottom: `1px solid var(--border)`
     }
   }, pages.map(p => h("button", {
     key: p.id,
@@ -1414,8 +1476,8 @@ function PublicSite({
     className: "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap",
     style: {
       background: page === p.id ? "var(--gold)" : "transparent",
-      color: page === p.id ? "var(--ink)" : "#cfe0dd",
-      border: `1px solid ${page === p.id ? "var(--gold)" : "#3a5451"}`
+      color: page === p.id ? "#fff" : "var(--ink)",
+      border: `1px solid ${page === p.id ? "var(--gold)" : "var(--border)"}`
     }
   }, p.label))), content, h("div", {
     className: "tile-band"
@@ -1425,24 +1487,24 @@ function PublicSite({
     className: "px-6 md:px-10 pt-12 pb-6 text-sm",
     style: {
       background: "var(--ink)",
-      color: "#9fb2af"
+      color: "#c9c2b4"
     }
   }, h("div", {
     className: "max-w-4xl mx-auto grid md:grid-cols-3 gap-8 mb-8 text-center md:text-left"
   }, h("div", null, h("p", {
     className: "font-display font-bold mb-2",
     style: {
-      color: "var(--paper)"
+      color: "var(--gold)"
     }
   }, "Visítanos"), h("p", null, business.address)), h("div", null, h("p", {
     className: "font-display font-bold mb-2",
     style: {
-      color: "var(--paper)"
+      color: "var(--gold)"
     }
   }, "Contacto"), h("p", null, business.phone), h("p", null, business.instagram)), h("div", null, h("p", {
     className: "font-display font-bold mb-2",
     style: {
-      color: "var(--paper)"
+      color: "var(--gold)"
     }
   }, "Explorar"), h("div", {
     className: "flex flex-col gap-1 items-center md:items-start"
@@ -1450,7 +1512,7 @@ function PublicSite({
     key: p.id,
     onClick: go(p.id),
     style: {
-      color: "#9fb2af",
+      color: "#c9c2b4",
       background: "none",
       border: "none",
       cursor: "pointer",
@@ -1459,7 +1521,7 @@ function PublicSite({
   }, p.label))))), h("div", {
     className: "text-center pt-6",
     style: {
-      borderTop: "1px solid #24413e"
+      borderTop: "1px solid #3a362e"
     }
   }, h("p", {
     className: "text-xs"
@@ -1467,7 +1529,7 @@ function PublicSite({
     onClick: onOpenAdmin,
     className: "mt-3 text-xs opacity-40",
     style: {
-      color: "#9fb2af",
+      color: "#c9c2b4",
       background: "none",
       border: "none",
       cursor: "pointer"
