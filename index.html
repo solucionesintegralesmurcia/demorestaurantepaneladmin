@@ -647,6 +647,8 @@ function RestaurantTemplateDemo() {
   const [about, setAboutState] = useState(stored?.about || seedAbout);
   const [banner, setBannerState] = useState(stored?.banner || seedBanner);
   const [reservations, setReservations] = useState(stored?.reservations || seedReservations);
+  const [gallery, setGallery] = useState(stored?.gallery || []);
+  const [page, setPage] = useState("inicio");
   const [activeCat, setActiveCat] = useState((stored?.categories && stored.categories[0]?.id) || seedCategories[0].id);
   useEffect(() => {
     saveStored({
@@ -656,9 +658,10 @@ function RestaurantTemplateDemo() {
       customers,
       about,
       banner,
-      reservations
+      reservations,
+      gallery
     });
-  }, [business, categories, specialMenus, customers, about, banner, reservations]);
+  }, [business, categories, specialMenus, customers, about, banner, reservations, gallery]);
   const setAbout = (field, value) => setAboutState(a => ({
     ...a,
     [field]: value
@@ -673,6 +676,31 @@ function RestaurantTemplateDemo() {
     ...data
   }, ...rs]);
   const deleteReservation = id => setReservations(rs => rs.filter(r => r.id !== id));
+  const addGalleryImages = async files => {
+    const list = Array.from(files || []);
+    const newItems = [];
+    for (const file of list) {
+      if (!file.type || !file.type.startsWith("image/")) continue;
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        newItems.push({
+          id: uid(),
+          src: dataUrl
+        });
+      } catch (e) {}
+    }
+    if (newItems.length) setGallery(g => [...g, ...newItems]);
+  };
+  const deleteGalleryImage = id => setGallery(g => g.filter(i => i.id !== id));
+  const reorderGallery = (fromId, toId) => setGallery(g => {
+    const arr = [...g];
+    const fromIdx = arr.findIndex(i => i.id === fromId);
+    const toIdx = arr.findIndex(i => i.id === toId);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return g;
+    const [moved] = arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, moved);
+    return arr;
+  });
   const [pricePct, setPricePct] = useState("");
   const [newCatName, setNewCatName] = useState("");
   const [copiedSlug, setCopiedSlug] = useState("");
@@ -817,6 +845,9 @@ function RestaurantTemplateDemo() {
     about: about,
     banner: banner,
     addReservation: addReservation,
+    gallery: gallery,
+    page: page,
+    setPage: setPage,
     onOpenAdmin: () => setMode("admin")
   }) : h("div", null, h("div", {
     className: "flex items-center justify-between px-4 md:px-8 py-3",
@@ -872,7 +903,11 @@ function RestaurantTemplateDemo() {
     banner: banner,
     setBanner: setBanner,
     reservations: reservations,
-    deleteReservation: deleteReservation
+    deleteReservation: deleteReservation,
+    gallery: gallery,
+    addGalleryImages: addGalleryImages,
+    deleteGalleryImage: deleteGalleryImage,
+    reorderGallery: reorderGallery
   }), h("p", {
     className: "text-center py-3 text-xs",
     style: {
@@ -990,30 +1025,262 @@ function PublicSite({
   about,
   banner,
   addReservation,
+  gallery,
+  page,
+  setPage,
   onOpenAdmin
 }) {
   const currentCat = categories.find(c => c.id === activeCat) || categories[0];
   const heroTitle = banner.title && banner.title.trim() ? banner.title : business.name;
   const heroSubtitle = banner.subtitle && banner.subtitle.trim() ? banner.subtitle : business.tagline;
-  const navLinks = [{
-    href: "#inicio",
+  const pages = [{
+    id: "inicio",
     label: "Inicio"
   }, {
-    href: "#quienes-somos",
+    id: "quienes",
     label: "Quiénes somos"
   }, {
-    href: "#menu",
-    label: "Menú"
+    id: "carta",
+    label: "Carta"
   }, {
-    href: "#reservas",
+    id: "galeria",
+    label: "Galería"
+  }, {
+    id: "reservas",
     label: "Reservas"
   }, {
-    href: "#contacto",
+    id: "contacto",
     label: "Contacto"
   }];
+  const go = id => () => setPage(id);
+  let content;
+  if (page === "inicio") {
+    content = h("section", {
+      className: "px-6 md:px-10 py-16 md:py-24 text-center",
+      style: business.photo ? {
+        backgroundImage: `linear-gradient(rgba(22,48,46,0.78), rgba(22,48,46,0.78)), url(${business.photo})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      } : {
+        background: "var(--ink)"
+      }
+    }, banner.offerActive && banner.offerText && h("div", {
+      className: "inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-bold",
+      style: {
+        background: "var(--brick)",
+        color: "#fff"
+      }
+    }, "🔥 ", banner.offerText), h("h1", {
+      className: "font-display text-3xl md:text-5xl font-bold mb-3",
+      style: {
+        color: "var(--paper)"
+      }
+    }, heroTitle), h("p", {
+      className: "text-base md:text-lg mb-8 max-w-xl mx-auto",
+      style: {
+        color: "#cfe0dd"
+      }
+    }, heroSubtitle), h("div", {
+      className: "flex flex-wrap gap-3 justify-center"
+    }, h("button", {
+      onClick: go("carta"),
+      className: "px-5 py-3 rounded-full text-sm font-semibold",
+      style: {
+        background: "var(--gold)",
+        color: "var(--ink)"
+      }
+    }, "Ver carta"), h("button", {
+      onClick: go("reservas"),
+      className: "px-5 py-3 rounded-full text-sm font-semibold border-2",
+      style: {
+        borderColor: "var(--gold)",
+        color: "var(--paper)",
+        background: "transparent"
+      }
+    }, "Reservar mesa")), activeSpecial && h("div", {
+      className: "mt-8 max-w-2xl mx-auto rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center text-left",
+      style: {
+        background: "#fff8ea",
+        border: "2px solid var(--gold)"
+      }
+    }, h(Icon, {
+      size: 22
+    }, "✨"), h("div", {
+      className: "flex-1"
+    }, h("p", {
+      className: "font-display font-bold text-lg",
+      style: {
+        color: "var(--ink)"
+      }
+    }, activeSpecial.title), h("p", {
+      className: "text-sm",
+      style: {
+        color: "#4c433a"
+      }
+    }, activeSpecial.desc, " ", activeSpecial.date && `· ${activeSpecial.date}`)), activeSpecial.photo && h("img", {
+      src: activeSpecial.photo,
+      alt: activeSpecial.title,
+      className: "w-20 h-20 rounded-lg object-cover"
+    }), activeSpecial.showQr && h("img", {
+      src: qrUrl(menuTargetUrl(activeSpecial)),
+      alt: "QR menú especial",
+      className: "w-20 h-20 rounded-lg"
+    })));
+  } else if (page === "quienes") {
+    content = h("section", {
+      className: "px-6 md:px-10 py-14 grid md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto"
+    }, about.photo ? h("img", {
+      src: about.photo,
+      alt: about.title,
+      className: "w-full h-64 object-cover rounded-xl"
+    }) : h("div", {
+      className: "w-full h-64 rounded-xl flex items-center justify-center",
+      style: {
+        background: "#e6ddc4",
+        color: "#7a7062"
+      }
+    }, "Sin foto todavía"), h("div", null, h("h2", {
+      className: "font-display text-2xl font-bold mb-3",
+      style: {
+        color: "var(--ink)"
+      }
+    }, about.title), h("p", {
+      className: "text-sm leading-relaxed",
+      style: {
+        color: "#4c433a"
+      }
+    }, about.text)));
+  } else if (page === "carta") {
+    content = h("section", {
+      className: "px-6 md:px-10 py-14",
+      style: {
+        background: "#fbf8f0"
+      }
+    }, h("h2", {
+      className: "font-display text-2xl font-bold mb-6 text-center",
+      style: {
+        color: "var(--ink)"
+      }
+    }, "Nuestra carta"), h("div", {
+      className: "flex gap-2 overflow-x-auto pb-4 justify-center flex-wrap"
+    }, categories.map(c => h("button", {
+      key: c.id,
+      onClick: () => setActiveCat(c.id),
+      className: "px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition",
+      style: {
+        background: currentCat.id === c.id ? "var(--brick)" : "transparent",
+        color: currentCat.id === c.id ? "#fff" : "var(--ink)",
+        border: `1.5px solid ${currentCat.id === c.id ? "var(--brick)" : "#c9bfa4"}`
+      }
+    }, c.name))), h("div", {
+      className: "max-w-2xl mx-auto mt-6"
+    }, currentCat?.photo && h("img", {
+      src: currentCat.photo,
+      alt: currentCat.name,
+      className: "w-full h-40 md:h-56 object-cover rounded-xl mb-4"
+    }), h("h3", {
+      className: "font-display text-xl font-semibold mb-4",
+      style: {
+        color: "var(--ink)"
+      }
+    }, currentCat?.name), h("div", {
+      className: "space-y-3"
+    }, currentCat?.items.length ? currentCat.items.map(it => h("div", {
+      key: it.id,
+      className: "flex items-end gap-3"
+    }, it.photo && h("img", {
+      src: it.photo,
+      alt: it.name,
+      className: "w-14 h-14 rounded-lg object-cover flex-shrink-0"
+    }), h("div", null, h("p", {
+      className: "font-semibold",
+      style: {
+        color: "var(--charcoal)"
+      }
+    }, it.name), it.desc && h("p", {
+      className: "text-xs",
+      style: {
+        color: "#7a7062"
+      }
+    }, it.desc)), h("div", {
+      className: "dot-leader"
+    }), h("p", {
+      className: "font-mono font-semibold",
+      style: {
+        color: "var(--brick)"
+      }
+    }, fmt(it.price)))) : h("p", {
+      className: "text-sm",
+      style: {
+        color: "#8a8072"
+      }
+    }, "Todavía no hay productos en esta categoría."))));
+  } else if (page === "galeria") {
+    content = h("section", {
+      className: "px-6 md:px-10 py-14 max-w-4xl mx-auto"
+    }, h("h2", {
+      className: "font-display text-2xl font-bold mb-6 text-center",
+      style: {
+        color: "var(--ink)"
+      }
+    }, "Galería"), gallery.length === 0 ? h("p", {
+      className: "text-sm text-center",
+      style: {
+        color: "#8a8072"
+      }
+    }, "Todavía no hay fotos en la galería.") : h("div", {
+      className: "grid grid-cols-2 md:grid-cols-3 gap-3"
+    }, gallery.map(img => h("img", {
+      key: img.id,
+      src: img.src,
+      alt: "Foto de la galería",
+      className: "w-full h-36 md:h-44 object-cover rounded-xl"
+    }))));
+  } else if (page === "reservas") {
+    content = h("section", {
+      className: "px-6 md:px-10 py-14 max-w-lg mx-auto"
+    }, h("h2", {
+      className: "font-display text-2xl font-bold mb-2 text-center",
+      style: {
+        color: "var(--ink)"
+      }
+    }, "Reserva tu mesa"), h("p", {
+      className: "text-sm text-center mb-6",
+      style: {
+        color: "#7a7062"
+      }
+    }, "Rellena el formulario y te confirmamos la disponibilidad."), h(ReservationForm, {
+      business: business,
+      addReservation: addReservation
+    }));
+  } else {
+    content = h("section", {
+      className: "px-6 md:px-10 py-14 max-w-lg mx-auto text-center"
+    }, h("h2", {
+      className: "font-display text-2xl font-bold mb-6",
+      style: {
+        color: "var(--ink)"
+      }
+    }, "Contacto"), h("div", {
+      className: "space-y-2 text-sm",
+      style: {
+        color: "#4c433a"
+      }
+    }, h("p", null, "📍 ", business.address), h("p", null, "📞 ", business.phone), h("p", null, "🕒 ", business.hours), h("p", null, "📷 ", business.instagram)), h("a", {
+      href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
+      target: "_blank",
+      rel: "noreferrer",
+      className: "inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-full text-sm font-semibold",
+      style: {
+        background: "var(--gold)",
+        color: "var(--ink)"
+      }
+    }, h(Icon, null, "💬"), " Escríbenos por WhatsApp"));
+  }
   return h("div", {
     style: {
-      background: "var(--paper)"
+      background: "var(--paper)",
+      minHeight: "100vh"
     }
   },
   // NAV
@@ -1022,8 +1289,14 @@ function PublicSite({
     style: {
       background: "var(--ink)"
     }
-  }, h("div", {
-    className: "flex items-center gap-3"
+  }, h("button", {
+    onClick: go("inicio"),
+    className: "flex items-center gap-3",
+    style: {
+      background: "none",
+      border: "none",
+      cursor: "pointer"
+    }
   }, h("div", {
     className: "w-10 h-10 rounded-full flex items-center justify-center font-display font-bold",
     style: {
@@ -1037,13 +1310,17 @@ function PublicSite({
     }
   }, business.name)), h("div", {
     className: "hidden md:flex items-center gap-5 text-sm font-medium"
-  }, navLinks.map(l => h("a", {
-    key: l.href,
-    href: l.href,
+  }, pages.map(p => h("button", {
+    key: p.id,
+    onClick: go(p.id),
     style: {
-      color: "#cfe0dd"
+      color: page === p.id ? "var(--gold)" : "#cfe0dd",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      fontWeight: page === p.id ? 700 : 500
     }
-  }, l.label))), h("a", {
+  }, p.label))), h("a", {
     href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
     target: "_blank",
     rel: "noreferrer",
@@ -1053,210 +1330,36 @@ function PublicSite({
       color: "var(--ink)"
     }
   }, h(Icon, null, "💬"), " Reservar")),
-  // HERO
-  h("section", {
-    id: "inicio",
-    className: "px-6 md:px-10 py-16 md:py-24 text-center",
-    style: business.photo ? {
-      backgroundImage: `linear-gradient(rgba(22,48,46,0.78), rgba(22,48,46,0.78)), url(${business.photo})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center"
-    } : {
-      background: "var(--ink)"
-    }
-  }, banner.offerActive && banner.offerText && h("div", {
-    className: "inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-bold",
+  // paginas (móvil)
+  h("div", {
+    className: "flex md:hidden gap-2 overflow-x-auto px-4 py-2",
     style: {
-      background: "var(--brick)",
-      color: "#fff"
+      background: "#0d2422"
     }
-  }, "🔥 ", banner.offerText), h("h1", {
-    className: "font-display text-3xl md:text-5xl font-bold mb-3",
+  }, pages.map(p => h("button", {
+    key: p.id,
+    onClick: go(p.id),
+    className: "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap",
     style: {
-      color: "var(--paper)"
+      background: page === p.id ? "var(--gold)" : "transparent",
+      color: page === p.id ? "var(--ink)" : "#cfe0dd",
+      border: `1px solid ${page === p.id ? "var(--gold)" : "#3a5451"}`
     }
-  }, heroTitle), h("p", {
-    className: "text-base md:text-lg mb-8 max-w-xl mx-auto",
-    style: {
-      color: "#cfe0dd"
-    }
-  }, heroSubtitle), h("div", {
-    className: "flex flex-wrap gap-3 justify-center"
-  }, h("a", {
-    href: "#menu",
-    className: "px-5 py-3 rounded-full text-sm font-semibold",
-    style: {
-      background: "var(--gold)",
-      color: "var(--ink)"
-    }
-  }, "Ver carta"), h("a", {
-    href: "#reservas",
-    className: "px-5 py-3 rounded-full text-sm font-semibold border-2",
-    style: {
-      borderColor: "var(--gold)",
-      color: "var(--paper)"
-    }
-  }, "Reservar mesa")), activeSpecial && h("div", {
-    className: "mt-8 max-w-2xl mx-auto rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center text-left",
-    style: {
-      background: "#fff8ea",
-      border: "2px solid var(--gold)"
-    }
-  }, h(Icon, {
-    size: 22
-  }, "✨"), h("div", {
-    className: "flex-1"
-  }, h("p", {
-    className: "font-display font-bold text-lg",
-    style: {
-      color: "var(--ink)"
-    }
-  }, activeSpecial.title), h("p", {
-    className: "text-sm",
-    style: {
-      color: "#4c433a"
-    }
-  }, activeSpecial.desc, " ", activeSpecial.date && `· ${activeSpecial.date}`)), activeSpecial.photo && h("img", {
-    src: activeSpecial.photo,
-    alt: activeSpecial.title,
-    className: "w-20 h-20 rounded-lg object-cover"
-  }), activeSpecial.showQr && h("img", {
-    src: qrUrl(menuTargetUrl(activeSpecial)),
-    alt: "QR menú especial",
-    className: "w-20 h-20 rounded-lg"
-  }))), h("div", {
+  }, p.label))), content, h("div", {
     className: "tile-band"
   }),
-  // QUIENES SOMOS
-  h("section", {
-    id: "quienes-somos",
-    className: "px-6 md:px-10 py-14 grid md:grid-cols-2 gap-8 items-center"
-  }, about.photo ? h("img", {
-    src: about.photo,
-    alt: about.title,
-    className: "w-full h-64 object-cover rounded-xl"
-  }) : h("div", {
-    className: "w-full h-64 rounded-xl flex items-center justify-center",
-    style: {
-      background: "#e6ddc4",
-      color: "#7a7062"
-    }
-  }, "Sin foto todavía"), h("div", null, h("h2", {
-    className: "font-display text-2xl font-bold mb-3",
-    style: {
-      color: "var(--ink)"
-    }
-  }, about.title), h("p", {
-    className: "text-sm leading-relaxed",
-    style: {
-      color: "#4c433a"
-    }
-  }, about.text))), h("div", {
-    className: "tile-band"
-  }),
-  // MENU
-  h("section", {
-    id: "menu",
-    className: "px-6 md:px-10 py-14",
-    style: {
-      background: "#fbf8f0"
-    }
-  }, h("h2", {
-    className: "font-display text-2xl font-bold mb-6 text-center",
-    style: {
-      color: "var(--ink)"
-    }
-  }, "Nuestra carta"), h("div", {
-    className: "flex gap-2 overflow-x-auto pb-4 justify-center flex-wrap"
-  }, categories.map(c => h("button", {
-    key: c.id,
-    onClick: () => setActiveCat(c.id),
-    className: "px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition",
-    style: {
-      background: currentCat.id === c.id ? "var(--brick)" : "transparent",
-      color: currentCat.id === c.id ? "#fff" : "var(--ink)",
-      border: `1.5px solid ${currentCat.id === c.id ? "var(--brick)" : "#c9bfa4"}`
-    }
-  }, c.name))), h("div", {
-    className: "max-w-2xl mx-auto mt-6"
-  }, currentCat?.photo && h("img", {
-    src: currentCat.photo,
-    alt: currentCat.name,
-    className: "w-full h-40 md:h-56 object-cover rounded-xl mb-4"
-  }), h("h3", {
-    className: "font-display text-xl font-semibold mb-4",
-    style: {
-      color: "var(--ink)"
-    }
-  }, currentCat?.name), h("div", {
-    className: "space-y-3"
-  }, currentCat?.items.length ? currentCat.items.map(it => h("div", {
-    key: it.id,
-    className: "flex items-end gap-3"
-  }, it.photo && h("img", {
-    src: it.photo,
-    alt: it.name,
-    className: "w-14 h-14 rounded-lg object-cover flex-shrink-0"
-  }), h("div", null, h("p", {
-    className: "font-semibold",
-    style: {
-      color: "var(--charcoal)"
-    }
-  }, it.name), it.desc && h("p", {
-    className: "text-xs",
-    style: {
-      color: "#7a7062"
-    }
-  }, it.desc)), h("div", {
-    className: "dot-leader"
-  }), h("p", {
-    className: "font-mono font-semibold",
-    style: {
-      color: "var(--brick)"
-    }
-  }, fmt(it.price)))) : h("p", {
-    className: "text-sm",
-    style: {
-      color: "#8a8072"
-    }
-  }, "Todavía no hay productos en esta categoría.")))), h("div", {
-    className: "tile-band"
-  }),
-  // RESERVAS
-  h("section", {
-    id: "reservas",
-    className: "px-6 md:px-10 py-14 max-w-lg mx-auto"
-  }, h("h2", {
-    className: "font-display text-2xl font-bold mb-2 text-center",
-    style: {
-      color: "var(--ink)"
-    }
-  }, "Reserva tu mesa"), h("p", {
-    className: "text-sm text-center mb-6",
-    style: {
-      color: "#7a7062"
-    }
-  }, "Rellena el formulario y te confirmamos la disponibilidad."), h(ReservationForm, {
-    business: business,
-    addReservation: addReservation
-  })), h("div", {
-    className: "tile-band"
-  }),
-  // FOOTER / CONTACTO
+  // FOOTER
   h("footer", {
-    id: "contacto",
-    className: "px-6 md:px-10 py-8 text-center text-sm",
+    className: "px-6 md:px-10 py-6 text-center text-sm",
     style: {
       background: "var(--ink)",
       color: "#9fb2af"
     }
   }, h("p", {
     className: "mb-1"
-  }, business.address, " · ", business.phone, " · ", business.instagram), h("p", {
-    className: "text-xs mt-1"
-  }, "🕒 ", business.hours), h("button", {
+  }, business.name, " · ", business.address), h("button", {
     onClick: onOpenAdmin,
-    className: "mt-4 text-xs opacity-40",
+    className: "mt-3 text-xs opacity-40",
     style: {
       color: "#9fb2af",
       background: "none",
@@ -1303,7 +1406,11 @@ function AdminPanel(props) {
     banner,
     setBanner,
     reservations,
-    deleteReservation
+    deleteReservation,
+    gallery,
+    addGalleryImages,
+    deleteGalleryImage,
+    reorderGallery
   } = props;
   const tabs = [{
     id: "negocio",
@@ -1325,6 +1432,10 @@ function AdminPanel(props) {
     id: "especiales",
     label: "Menús especiales",
     icon: "✨"
+  }, {
+    id: "galeria",
+    label: `Galería${gallery.length ? " (" + gallery.length + ")" : ""}`,
+    icon: "🖼️"
   }, {
     id: "reservas",
     label: `Reservas${reservations.length ? " (" + reservations.length + ")" : ""}`,
@@ -1387,6 +1498,11 @@ function AdminPanel(props) {
     copyLink: copyLink,
     copiedSlug: copiedSlug,
     business: business
+  }), adminTab === "galeria" && h(GalleryTab, {
+    gallery: gallery,
+    addGalleryImages: addGalleryImages,
+    deleteGalleryImage: deleteGalleryImage,
+    reorderGallery: reorderGallery
   }), adminTab === "reservas" && h(ReservationsTab, {
     reservations: reservations,
     deleteReservation: deleteReservation
@@ -1398,6 +1514,103 @@ function AdminPanel(props) {
     deleteCustomer: deleteCustomer,
     sendWa: sendWa
   })));
+}
+function GalleryTab({
+  gallery,
+  addGalleryImages,
+  deleteGalleryImage,
+  reorderGallery
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  const [draggedId, setDraggedId] = useState(null);
+  const inputRef = useRef(null);
+  return h("div", null, h("h2", {
+    className: "font-display text-xl font-bold mb-1",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Galería de fotos"), h("p", {
+    className: "text-sm mb-5",
+    style: {
+      color: "#7a7062"
+    }
+  }, "Sube todas las fotos que quieras. Para ordenarlas, arrastra una foto y suéltala sobre otra."), h("div", {
+    onDragOver: e => {
+      e.preventDefault();
+      setDragOver(true);
+    },
+    onDragLeave: () => setDragOver(false),
+    onDrop: e => {
+      e.preventDefault();
+      setDragOver(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length) {
+        addGalleryImages(e.dataTransfer.files);
+      }
+    },
+    onClick: () => inputRef.current && inputRef.current.click(),
+    className: "rounded-xl flex items-center justify-center cursor-pointer mb-6 transition",
+    style: {
+      height: 110,
+      border: `2px dashed ${dragOver ? "var(--gold)" : "#c9bfa4"}`,
+      background: "#fbf7ec"
+    }
+  }, h("div", {
+    className: "text-center text-sm",
+    style: {
+      color: "#8a8072"
+    }
+  }, h(Icon, {
+    size: 24
+  }, "🖼️"), h("p", {
+    className: "mt-1"
+  }, "Arrastra varias fotos aquí o haz clic para subirlas")), h("input", {
+    ref: inputRef,
+    type: "file",
+    accept: "image/*",
+    multiple: true,
+    className: "hidden",
+    onChange: e => {
+      addGalleryImages(e.target.files);
+      e.target.value = "";
+    }
+  })), gallery.length === 0 ? h("p", {
+    className: "text-sm",
+    style: {
+      color: "#8a8072"
+    }
+  }, "Todavía no has subido ninguna foto.") : h("div", {
+    className: "grid grid-cols-2 md:grid-cols-4 gap-3"
+  }, gallery.map(img => h("div", {
+    key: img.id,
+    draggable: true,
+    onDragStart: () => setDraggedId(img.id),
+    onDragOver: e => e.preventDefault(),
+    onDrop: e => {
+      e.preventDefault();
+      if (draggedId && draggedId !== img.id) reorderGallery(draggedId, img.id);
+      setDraggedId(null);
+    },
+    className: "relative rounded-xl overflow-hidden cursor-move",
+    style: {
+      height: 120,
+      border: "2px solid #e6ddc4",
+      opacity: draggedId === img.id ? 0.4 : 1
+    }
+  }, h("img", {
+    src: img.src,
+    alt: "Foto de galería",
+    className: "w-full h-full object-cover"
+  }), h("button", {
+    onClick: e => {
+      e.stopPropagation();
+      deleteGalleryImage(img.id);
+    },
+    className: "absolute top-1 right-1 text-xs px-2 py-1 rounded-full font-semibold shadow",
+    style: {
+      background: "#fff",
+      color: "var(--brick)"
+    }
+  }, "🗑")))));
 }
 function BannerTab({
   banner,
