@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -17,6 +16,17 @@
   .dot-leader { flex: 1; border-bottom: 2px dotted var(--gold); margin: 0 10px; height: 1px; align-self: flex-end; opacity: 0.7; }
   .tile-band { height: 12px; background: repeating-linear-gradient(45deg, var(--teal) 0 6px, var(--gold) 6px 12px, var(--brick) 12px 18px); opacity: 0.9; }
   input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 0 0 2px var(--gold); border-radius: 4px; }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sticky { position: sticky; }
+  .top-0 { top: 0; }
+  .z-20 { z-index: 20; }
+  .leading-relaxed { line-height: 1.625; }
+  .max-w-xl { max-width: 36rem; }
+  .max-w-2xl { max-width: 42rem; }
+  .border-2 { border-width: 2px; }
+  .opacity-40 { opacity: 0.4; }
+  .opacity-40:hover { opacity: 0.85; }
+  nav a:hover { color: var(--gold) !important; }
 </style>
 </head>
 <body>
@@ -541,6 +551,18 @@ const seedBusiness = {
   instagram: "@casabracero",
   logoInitial: "CB"
 };
+const seedAbout = {
+  title: "Quiénes somos",
+  text: "Somos un equipo apasionado por la cocina de mercado y el producto de cercanía. Llevamos años cuidando cada plato como si fuera para nuestra propia familia, en un ambiente cercano y sin prisas.",
+  photo: ""
+};
+const seedBanner = {
+  title: "",
+  subtitle: "",
+  offerText: "",
+  offerActive: false
+};
+const seedReservations = [];
 const seedSpecialMenus = [{
   id: "m1",
   title: "Menú de Nochevieja",
@@ -622,15 +644,35 @@ function RestaurantTemplateDemo() {
   const [categories, setCategories] = useState(stored?.categories && stored.categories.length ? stored.categories : seedCategories);
   const [specialMenus, setSpecialMenus] = useState(stored?.specialMenus || seedSpecialMenus);
   const [customers, setCustomers] = useState(stored?.customers || seedCustomers);
+  const [about, setAboutState] = useState(stored?.about || seedAbout);
+  const [banner, setBannerState] = useState(stored?.banner || seedBanner);
+  const [reservations, setReservations] = useState(stored?.reservations || seedReservations);
   const [activeCat, setActiveCat] = useState((stored?.categories && stored.categories[0]?.id) || seedCategories[0].id);
   useEffect(() => {
     saveStored({
       business,
       categories,
       specialMenus,
-      customers
+      customers,
+      about,
+      banner,
+      reservations
     });
-  }, [business, categories, specialMenus, customers]);
+  }, [business, categories, specialMenus, customers, about, banner, reservations]);
+  const setAbout = (field, value) => setAboutState(a => ({
+    ...a,
+    [field]: value
+  }));
+  const setBanner = (field, value) => setBannerState(b => ({
+    ...b,
+    [field]: value
+  }));
+  const addReservation = data => setReservations(rs => [{
+    id: uid(),
+    createdAt: new Date().toISOString(),
+    ...data
+  }, ...rs]);
+  const deleteReservation = id => setReservations(rs => rs.filter(r => r.id !== id));
   const [pricePct, setPricePct] = useState("");
   const [newCatName, setNewCatName] = useState("");
   const [copiedSlug, setCopiedSlug] = useState("");
@@ -756,7 +798,7 @@ function RestaurantTemplateDemo() {
     const text = kind === "review" ? t.review(customer.name, business.name) : t.offer(customer.name, business.name);
     window.open(buildWaLink(customer.phone, text), "_blank");
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return h("div", {
     style: {
       "--ink": "#16302E",
       "--paper": "#F1EAD9",
@@ -765,36 +807,35 @@ function RestaurantTemplateDemo() {
       "--teal": "#2F6F6B",
       "--charcoal": "#22201B",
       minHeight: "100vh"
-    },
-    className: "w-full p-3 md:p-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-5xl mx-auto mb-4 flex gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setMode("public"),
-    className: "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition",
-    style: {
-      background: mode === "public" ? "var(--gold)" : "#1c332f",
-      color: mode === "public" ? "#16302E" : "#cfd8d6"
     }
-  }, /*#__PURE__*/React.createElement(Icon, null, "👁"), " Vista del cliente"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setMode("admin"),
-    className: "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition",
-    style: {
-      background: mode === "admin" ? "var(--gold)" : "#1c332f",
-      color: mode === "admin" ? "#16302E" : "#cfd8d6"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, null, "🧭"), " Panel de administración")), /*#__PURE__*/React.createElement("div", {
-    className: "max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl",
-    style: {
-      background: "var(--paper)"
-    }
-  }, mode === "public" ? /*#__PURE__*/React.createElement(PublicSite, {
+  }, mode === "public" ? h(PublicSite, {
     business: business,
     categories: categories,
     activeSpecial: activeSpecial,
     activeCat: activeCat,
-    setActiveCat: setActiveCat
-  }) : /*#__PURE__*/React.createElement(AdminPanel, {
+    setActiveCat: setActiveCat,
+    about: about,
+    banner: banner,
+    addReservation: addReservation,
+    onOpenAdmin: () => setMode("admin")
+  }) : h("div", null, h("div", {
+    className: "flex items-center justify-between px-4 md:px-8 py-3",
+    style: {
+      background: "var(--ink)"
+    }
+  }, h("span", {
+    className: "font-display font-bold text-lg",
+    style: {
+      color: "var(--paper)"
+    }
+  }, "🧭 Panel de administración"), h("button", {
+    onClick: () => setMode("public"),
+    className: "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold",
+    style: {
+      background: "var(--gold)",
+      color: "var(--ink)"
+    }
+  }, h(Icon, null, "🌐"), " Volver a la web")), h(AdminPanel, {
     adminTab: adminTab,
     setAdminTab: setAdminTab,
     business: business,
@@ -825,115 +866,252 @@ function RestaurantTemplateDemo() {
     setCustForm: setCustForm,
     addCustomer: addCustomer,
     deleteCustomer: deleteCustomer,
-    sendWa: sendWa
-  })), /*#__PURE__*/React.createElement("p", {
-    className: "max-w-5xl mx-auto text-center mt-3 text-xs",
+    sendWa: sendWa,
+    about: about,
+    setAbout: setAbout,
+    banner: banner,
+    setBanner: setBanner,
+    reservations: reservations,
+    deleteReservation: deleteReservation
+  }), h("p", {
+    className: "text-center py-3 text-xs",
     style: {
-      color: "#6d8481"
+      color: "#6d8481",
+      background: "#fbf8f0"
     }
-  }, "Los cambios se guardan automáticamente en este navegador (sin necesidad de conexión a una base de datos externa). Los envíos de WhatsApp abren una conversación real con el mensaje ya escrito."));
+  }, "Los cambios se guardan automáticamente en este navegador (sin necesidad de conexión a una base de datos externa). Los envíos de WhatsApp abren una conversación real con el mensaje ya escrito.")));
+}
+function ReservationForm({
+  business,
+  addReservation
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    date: "",
+    time: "",
+    people: "2",
+    notes: ""
+  });
+  const [sent, setSent] = useState(false);
+  const setF = (field, value) => setForm(f => ({
+    ...f,
+    [field]: value
+  }));
+  const submit = e => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.phone.trim() || !form.date) return;
+    addReservation(form);
+    setSent(true);
+    setForm({
+      name: "",
+      phone: "",
+      date: "",
+      time: "",
+      people: "2",
+      notes: ""
+    });
+    setTimeout(() => setSent(false), 4000);
+  };
+  return h("form", {
+    onSubmit: submit,
+    className: "space-y-3"
+  }, h("input", {
+    className: inputClass,
+    style: inputStyle,
+    placeholder: "Tu nombre",
+    value: form.name,
+    onChange: e => setF("name", e.target.value)
+  }), h("input", {
+    className: inputClass,
+    style: inputStyle,
+    placeholder: "Teléfono",
+    value: form.phone,
+    onChange: e => setF("phone", e.target.value)
+  }), h("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, h("input", {
+    type: "date",
+    className: inputClass,
+    style: inputStyle,
+    value: form.date,
+    onChange: e => setF("date", e.target.value)
+  }), h("input", {
+    type: "time",
+    className: inputClass,
+    style: inputStyle,
+    value: form.time,
+    onChange: e => setF("time", e.target.value)
+  })), h("input", {
+    type: "number",
+    min: "1",
+    className: inputClass,
+    style: inputStyle,
+    placeholder: "Nº de personas",
+    value: form.people,
+    onChange: e => setF("people", e.target.value)
+  }), h("textarea", {
+    className: inputClass,
+    style: {
+      ...inputStyle,
+      minHeight: 70
+    },
+    placeholder: "Notas (alergias, ocasión especial...)",
+    value: form.notes,
+    onChange: e => setF("notes", e.target.value)
+  }), h("button", {
+    type: "submit",
+    className: "w-full py-3 rounded-lg font-semibold text-sm",
+    style: {
+      background: "var(--gold)",
+      color: "var(--ink)"
+    }
+  }, "Enviar solicitud de reserva"), sent && h("p", {
+    className: "text-center text-sm font-semibold",
+    style: {
+      color: "var(--teal)"
+    }
+  }, "✔ ¡Solicitud recibida! Te confirmaremos la reserva lo antes posible."), h("a", {
+    href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
+    target: "_blank",
+    rel: "noreferrer",
+    className: "flex items-center justify-center gap-2 text-sm font-semibold mt-2",
+    style: {
+      color: "var(--teal)"
+    }
+  }, h(Icon, null, "💬"), " o resérvanos directo por WhatsApp"));
 }
 function PublicSite({
   business,
   categories,
   activeSpecial,
   activeCat,
-  setActiveCat
+  setActiveCat,
+  about,
+  banner,
+  addReservation,
+  onOpenAdmin
 }) {
   const currentCat = categories.find(c => c.id === activeCat) || categories[0];
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 px-4 py-2 text-xs",
+  const heroTitle = banner.title && banner.title.trim() ? banner.title : business.name;
+  const heroSubtitle = banner.subtitle && banner.subtitle.trim() ? banner.subtitle : business.tagline;
+  const navLinks = [{
+    href: "#inicio",
+    label: "Inicio"
+  }, {
+    href: "#quienes-somos",
+    label: "Quiénes somos"
+  }, {
+    href: "#menu",
+    label: "Menú"
+  }, {
+    href: "#reservas",
+    label: "Reservas"
+  }, {
+    href: "#contacto",
+    label: "Contacto"
+  }];
+  return h("div", {
     style: {
-      background: "#0E1D1B",
-      color: "#8fa6a2"
+      background: "var(--paper)"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full",
+  },
+  // NAV
+  h("nav", {
+    className: "sticky top-0 z-20 flex items-center justify-between gap-4 px-4 md:px-10 py-3",
     style: {
-      background: "#e0605080"
+      background: "var(--ink)"
     }
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full",
+  }, h("div", {
+    className: "flex items-center gap-3"
+  }, h("div", {
+    className: "w-10 h-10 rounded-full flex items-center justify-center font-display font-bold",
     style: {
-      background: "#e8c05680"
+      background: "var(--gold)",
+      color: "var(--ink)"
     }
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full",
+  }, business.logoInitial), h("span", {
+    className: "font-display font-bold text-lg",
     style: {
-      background: "#6bbf7680"
+      color: "var(--paper)"
     }
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "font-mono ml-2 truncate"
-  }, "www.", business.name.toLowerCase().replace(/\s+/g, ""), ".com")), /*#__PURE__*/React.createElement("div", {
-    className: "tile-band"
-  }), /*#__PURE__*/React.createElement("header", {
-    className: "px-6 md:px-10 py-8 flex items-center justify-between gap-4",
+  }, business.name)), h("div", {
+    className: "hidden md:flex items-center gap-5 text-sm font-medium"
+  }, navLinks.map(l => h("a", {
+    key: l.href,
+    href: l.href,
+    style: {
+      color: "#cfe0dd"
+    }
+  }, l.label))), h("a", {
+    href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
+    target: "_blank",
+    rel: "noreferrer",
+    className: "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold",
+    style: {
+      background: "var(--gold)",
+      color: "var(--ink)"
+    }
+  }, h(Icon, null, "💬"), " Reservar")),
+  // HERO
+  h("section", {
+    id: "inicio",
+    className: "px-6 md:px-10 py-16 md:py-24 text-center",
     style: business.photo ? {
-      backgroundImage: `linear-gradient(rgba(22,48,46,0.82), rgba(22,48,46,0.82)), url(${business.photo})`,
+      backgroundImage: `linear-gradient(rgba(22,48,46,0.78), rgba(22,48,46,0.78)), url(${business.photo})`,
       backgroundSize: "cover",
       backgroundPosition: "center"
     } : {
       background: "var(--ink)"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-14 h-14 rounded-full flex items-center justify-center font-display font-bold text-xl",
+  }, banner.offerActive && banner.offerText && h("div", {
+    className: "inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-bold",
     style: {
-      background: "var(--gold)",
-      color: "var(--ink)"
+      background: "var(--brick)",
+      color: "#fff"
     }
-  }, business.logoInitial), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
-    className: "font-display text-2xl md:text-3xl font-bold",
+  }, "🔥 ", banner.offerText), h("h1", {
+    className: "font-display text-3xl md:text-5xl font-bold mb-3",
     style: {
       color: "var(--paper)"
     }
-  }, business.name), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm",
+  }, heroTitle), h("p", {
+    className: "text-base md:text-lg mb-8 max-w-xl mx-auto",
     style: {
-      color: "#b9c9c6"
+      color: "#cfe0dd"
     }
-  }, business.tagline))), /*#__PURE__*/React.createElement("a", {
-    href: `https://wa.me/${business.whatsapp.replace(/[^\d]/g, "")}`,
-    target: "_blank",
-    rel: "noreferrer",
-    className: "hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold",
+  }, heroSubtitle), h("div", {
+    className: "flex flex-wrap gap-3 justify-center"
+  }, h("a", {
+    href: "#menu",
+    className: "px-5 py-3 rounded-full text-sm font-semibold",
     style: {
       background: "var(--gold)",
       color: "var(--ink)"
     }
-  }, /*#__PURE__*/React.createElement(Icon, null, "💬"), " Reservar por WhatsApp")), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-4 px-6 md:px-10 py-3 text-sm",
+  }, "Ver carta"), h("a", {
+    href: "#reservas",
+    className: "px-5 py-3 rounded-full text-sm font-semibold border-2",
     style: {
-      background: "#0d2422",
-      color: "#cfe0dd"
+      borderColor: "var(--gold)",
+      color: "var(--paper)"
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(Icon, null, "📍"), " ", business.address), /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(Icon, null, "📞"), " ", business.phone), /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(Icon, null, "🕒"), " ", business.hours), /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(Icon, null, "📷"), " ", business.instagram)), activeSpecial && /*#__PURE__*/React.createElement("div", {
-    className: "mx-6 md:mx-10 mt-6 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center",
+  }, "Reservar mesa")), activeSpecial && h("div", {
+    className: "mt-8 max-w-2xl mx-auto rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center text-left",
     style: {
       background: "#fff8ea",
       border: "2px solid var(--gold)"
     }
-  }, /*#__PURE__*/React.createElement(Icon, {
+  }, h(Icon, {
     size: 22
-  }, "✨"), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 text-center md:text-left"
-  }, /*#__PURE__*/React.createElement("p", {
+  }, "✨"), h("div", {
+    className: "flex-1"
+  }, h("p", {
     className: "font-display font-bold text-lg",
     style: {
       color: "var(--ink)"
     }
-  }, activeSpecial.title), /*#__PURE__*/React.createElement("p", {
+  }, activeSpecial.title), h("p", {
     className: "text-sm",
     style: {
       color: "#4c433a"
@@ -942,13 +1120,55 @@ function PublicSite({
     src: activeSpecial.photo,
     alt: activeSpecial.title,
     className: "w-20 h-20 rounded-lg object-cover"
-  }), activeSpecial.showQr && /*#__PURE__*/React.createElement("img", {
+  }), activeSpecial.showQr && h("img", {
     src: qrUrl(menuTargetUrl(activeSpecial)),
     alt: "QR menú especial",
     className: "w-20 h-20 rounded-lg"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 overflow-x-auto px-6 md:px-10 py-6"
-  }, categories.map(c => /*#__PURE__*/React.createElement("button", {
+  }))), h("div", {
+    className: "tile-band"
+  }),
+  // QUIENES SOMOS
+  h("section", {
+    id: "quienes-somos",
+    className: "px-6 md:px-10 py-14 grid md:grid-cols-2 gap-8 items-center"
+  }, about.photo ? h("img", {
+    src: about.photo,
+    alt: about.title,
+    className: "w-full h-64 object-cover rounded-xl"
+  }) : h("div", {
+    className: "w-full h-64 rounded-xl flex items-center justify-center",
+    style: {
+      background: "#e6ddc4",
+      color: "#7a7062"
+    }
+  }, "Sin foto todavía"), h("div", null, h("h2", {
+    className: "font-display text-2xl font-bold mb-3",
+    style: {
+      color: "var(--ink)"
+    }
+  }, about.title), h("p", {
+    className: "text-sm leading-relaxed",
+    style: {
+      color: "#4c433a"
+    }
+  }, about.text))), h("div", {
+    className: "tile-band"
+  }),
+  // MENU
+  h("section", {
+    id: "menu",
+    className: "px-6 md:px-10 py-14",
+    style: {
+      background: "#fbf8f0"
+    }
+  }, h("h2", {
+    className: "font-display text-2xl font-bold mb-6 text-center",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Nuestra carta"), h("div", {
+    className: "flex gap-2 overflow-x-auto pb-4 justify-center flex-wrap"
+  }, categories.map(c => h("button", {
     key: c.id,
     onClick: () => setActiveCat(c.id),
     className: "px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition",
@@ -957,57 +1177,93 @@ function PublicSite({
       color: currentCat.id === c.id ? "#fff" : "var(--ink)",
       border: `1.5px solid ${currentCat.id === c.id ? "var(--brick)" : "#c9bfa4"}`
     }
-  }, c.name))), /*#__PURE__*/React.createElement("div", {
-    className: "px-6 md:px-10 pb-10"
+  }, c.name))), h("div", {
+    className: "max-w-2xl mx-auto mt-6"
   }, currentCat?.photo && h("img", {
     src: currentCat.photo,
     alt: currentCat.name,
     className: "w-full h-40 md:h-56 object-cover rounded-xl mb-4"
-  }), /*#__PURE__*/React.createElement("h2", {
+  }), h("h3", {
     className: "font-display text-xl font-semibold mb-4",
     style: {
       color: "var(--ink)"
     }
-  }, currentCat?.name), /*#__PURE__*/React.createElement("div", {
+  }, currentCat?.name), h("div", {
     className: "space-y-3"
-  }, currentCat?.items.length ? currentCat.items.map(it => /*#__PURE__*/React.createElement("div", {
+  }, currentCat?.items.length ? currentCat.items.map(it => h("div", {
     key: it.id,
     className: "flex items-end gap-3"
   }, it.photo && h("img", {
     src: it.photo,
     alt: it.name,
     className: "w-14 h-14 rounded-lg object-cover flex-shrink-0"
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }), h("div", null, h("p", {
     className: "font-semibold",
     style: {
       color: "var(--charcoal)"
     }
-  }, it.name), it.desc && /*#__PURE__*/React.createElement("p", {
+  }, it.name), it.desc && h("p", {
     className: "text-xs",
     style: {
       color: "#7a7062"
     }
-  }, it.desc)), /*#__PURE__*/React.createElement("div", {
+  }, it.desc)), h("div", {
     className: "dot-leader"
-  }), /*#__PURE__*/React.createElement("p", {
+  }), h("p", {
     className: "font-mono font-semibold",
     style: {
       color: "var(--brick)"
     }
-  }, fmt(it.price)))) : /*#__PURE__*/React.createElement("p", {
+  }, fmt(it.price)))) : h("p", {
     className: "text-sm",
     style: {
       color: "#8a8072"
     }
-  }, "Todavía no hay productos en esta categoría."))), /*#__PURE__*/React.createElement("div", {
+  }, "Todavía no hay productos en esta categoría.")))), h("div", {
     className: "tile-band"
-  }), /*#__PURE__*/React.createElement("footer", {
-    className: "px-6 md:px-10 py-6 text-center text-sm",
+  }),
+  // RESERVAS
+  h("section", {
+    id: "reservas",
+    className: "px-6 md:px-10 py-14 max-w-lg mx-auto"
+  }, h("h2", {
+    className: "font-display text-2xl font-bold mb-2 text-center",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Reserva tu mesa"), h("p", {
+    className: "text-sm text-center mb-6",
+    style: {
+      color: "#7a7062"
+    }
+  }, "Rellena el formulario y te confirmamos la disponibilidad."), h(ReservationForm, {
+    business: business,
+    addReservation: addReservation
+  })), h("div", {
+    className: "tile-band"
+  }),
+  // FOOTER / CONTACTO
+  h("footer", {
+    id: "contacto",
+    className: "px-6 md:px-10 py-8 text-center text-sm",
     style: {
       background: "var(--ink)",
       color: "#9fb2af"
     }
-  }, business.address, " · ", business.phone, " · ", business.instagram));
+  }, h("p", {
+    className: "mb-1"
+  }, business.address, " · ", business.phone, " · ", business.instagram), h("p", {
+    className: "text-xs mt-1"
+  }, "🕒 ", business.hours), h("button", {
+    onClick: onOpenAdmin,
+    className: "mt-4 text-xs opacity-40",
+    style: {
+      color: "#9fb2af",
+      background: "none",
+      border: "none",
+      cursor: "pointer"
+    }
+  }, "Acceso privado")));
 }
 function AdminPanel(props) {
   const {
@@ -1041,12 +1297,26 @@ function AdminPanel(props) {
     setCustForm,
     addCustomer,
     deleteCustomer,
-    sendWa
+    sendWa,
+    about,
+    setAbout,
+    banner,
+    setBanner,
+    reservations,
+    deleteReservation
   } = props;
   const tabs = [{
     id: "negocio",
     label: "Datos del negocio",
     icon: "🏬"
+  }, {
+    id: "banner",
+    label: "Banner y ofertas",
+    icon: "📣"
+  }, {
+    id: "quienes",
+    label: "Quiénes somos",
+    icon: "🙋"
   }, {
     id: "carta",
     label: "Carta y precios",
@@ -1055,6 +1325,10 @@ function AdminPanel(props) {
     id: "especiales",
     label: "Menús especiales",
     icon: "✨"
+  }, {
+    id: "reservas",
+    label: `Reservas${reservations.length ? " (" + reservations.length + ")" : ""}`,
+    icon: "📅"
   }, {
     id: "clientes",
     label: "Clientes (CRM)",
@@ -1083,6 +1357,12 @@ function AdminPanel(props) {
   }, adminTab === "negocio" && /*#__PURE__*/React.createElement(BusinessTab, {
     business: business,
     setBiz: setBiz
+  }), adminTab === "banner" && h(BannerTab, {
+    banner: banner,
+    setBanner: setBanner
+  }), adminTab === "quienes" && h(AboutTab, {
+    about: about,
+    setAbout: setAbout
   }), adminTab === "carta" && /*#__PURE__*/React.createElement(MenuTab, {
     categories: categories,
     addCategory: addCategory,
@@ -1107,6 +1387,9 @@ function AdminPanel(props) {
     copyLink: copyLink,
     copiedSlug: copiedSlug,
     business: business
+  }), adminTab === "reservas" && h(ReservationsTab, {
+    reservations: reservations,
+    deleteReservation: deleteReservation
   }), adminTab === "clientes" && /*#__PURE__*/React.createElement(CustomersTab, {
     customers: customers,
     custForm: custForm,
@@ -1115,6 +1398,167 @@ function AdminPanel(props) {
     deleteCustomer: deleteCustomer,
     sendWa: sendWa
   })));
+}
+function BannerTab({
+  banner,
+  setBanner
+}) {
+  return h("div", {
+    className: "max-w-lg"
+  }, h("h2", {
+    className: "font-display text-xl font-bold mb-1",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Banner principal y ofertas"), h("p", {
+    className: "text-sm mb-5",
+    style: {
+      color: "#7a7062"
+    }
+  }, "Esto es lo primero que ve el cliente al entrar en la web. La foto de fondo se cambia desde \u2018Datos del negocio\u2019."), h(Field, {
+    label: "Título grande (si lo dejas vacío, se usa el nombre del negocio)"
+  }, h("input", {
+    className: inputClass,
+    style: inputStyle,
+    value: banner.title,
+    placeholder: "Ej. Bienvenidos a Casa Bracero",
+    onChange: e => setBanner("title", e.target.value)
+  })), h(Field, {
+    label: "Subtítulo (si lo dejas vacío, se usa el eslogan)"
+  }, h("input", {
+    className: inputClass,
+    style: inputStyle,
+    value: banner.subtitle,
+    placeholder: "Ej. Cocina de brasa y producto de mercado",
+    onChange: e => setBanner("subtitle", e.target.value)
+  })), h("div", {
+    className: "mt-6 p-4 rounded-xl",
+    style: {
+      background: "#fff",
+      border: "1px solid #e6ddc4"
+    }
+  }, h("label", {
+    className: "flex items-center gap-2 mb-3 text-sm font-semibold",
+    style: {
+      color: "var(--ink)"
+    }
+  }, h("input", {
+    type: "checkbox",
+    checked: banner.offerActive,
+    onChange: e => setBanner("offerActive", e.target.checked)
+  }), " Mostrar aviso de oferta en el banner principal"), h(Field, {
+    label: "Texto de la oferta"
+  }, h("input", {
+    className: inputClass,
+    style: inputStyle,
+    value: banner.offerText,
+    placeholder: "Ej. 2x1 en cañas todos los martes",
+    onChange: e => setBanner("offerText", e.target.value)
+  }))));
+}
+function AboutTab({
+  about,
+  setAbout
+}) {
+  return h("div", {
+    className: "max-w-lg"
+  }, h("h2", {
+    className: "font-display text-xl font-bold mb-1",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Quiénes somos"), h("p", {
+    className: "text-sm mb-5",
+    style: {
+      color: "#7a7062"
+    }
+  }, "Este texto y esta foto aparecen en la sección \u2018Quiénes somos\u2019 de la web."), h(Field, {
+    label: "Título de la sección"
+  }, h("input", {
+    className: inputClass,
+    style: inputStyle,
+    value: about.title,
+    onChange: e => setAbout("title", e.target.value)
+  })), h(Field, {
+    label: "Texto"
+  }, h("textarea", {
+    className: inputClass,
+    style: {
+      ...inputStyle,
+      minHeight: 140
+    },
+    value: about.text,
+    onChange: e => setAbout("text", e.target.value)
+  })), h(Field, {
+    label: "Foto"
+  }, h(ImageDropzone, {
+    image: about.photo || "",
+    onChange: dataUrl => setAbout("photo", dataUrl),
+    height: 150
+  })));
+}
+function ReservationsTab({
+  reservations,
+  deleteReservation
+}) {
+  return h("div", null, h("h2", {
+    className: "font-display text-xl font-bold mb-1",
+    style: {
+      color: "var(--ink)"
+    }
+  }, "Solicitudes de reserva"), h("p", {
+    className: "text-sm mb-5",
+    style: {
+      color: "#7a7062"
+    }
+  }, "Peticiones enviadas por clientes desde el formulario de la web. Contáctales para confirmar."), reservations.length === 0 ? h("p", {
+    className: "text-sm",
+    style: {
+      color: "#8a8072"
+    }
+  }, "Todavía no hay ninguna solicitud de reserva.") : h("div", {
+    className: "space-y-3"
+  }, reservations.map(r => h("div", {
+    key: r.id,
+    className: "rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3",
+    style: {
+      background: "#fff",
+      border: "1px solid #e6ddc4"
+    }
+  }, h("div", null, h("p", {
+    className: "font-semibold",
+    style: {
+      color: "var(--charcoal)"
+    }
+  }, r.name, " · ", r.people, " pers."), h("p", {
+    className: "text-sm",
+    style: {
+      color: "#7a7062"
+    }
+  }, "\uD83D\uDCC5 ", r.date, r.time ? ` a las ${r.time}` : "", " · \uD83D\uDCDE ", r.phone), r.notes && h("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: "#8a8072"
+    }
+  }, "\uD83D\uDCDD ", r.notes)), h("div", {
+    className: "flex items-center gap-2"
+  }, h("a", {
+    href: `https://wa.me/${(r.phone || "").replace(/[^\d]/g, "")}`,
+    target: "_blank",
+    rel: "noreferrer",
+    className: "flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold",
+    style: {
+      background: "#eaf3ec",
+      color: "var(--teal)"
+    }
+  }, h(Icon, null, "\uD83D\uDCAC"), " WhatsApp"), h("button", {
+    onClick: () => deleteReservation(r.id),
+    className: "p-1.5 rounded-lg",
+    style: {
+      background: "#fbeee9",
+      color: "var(--brick)"
+    }
+  }, h(Icon, null, "\uD83D\uDDD1"))))))); 
 }
 function Field({
   label,
