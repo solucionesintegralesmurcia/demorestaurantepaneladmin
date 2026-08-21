@@ -11,7 +11,7 @@
 </style>
 <style>
   body { margin: 0; font-family: 'Inter', sans-serif; background: #0E1D1B; }
-  .font-display { font-family: 'Fraunces', serif; }
+  .font-display { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
   .font-mono { font-family: 'IBM Plex Mono', monospace; }
   .dot-leader { flex: 1; border-bottom: 2px dotted var(--gold); margin: 0 10px; height: 1px; align-self: flex-end; opacity: 0.7; }
   .tile-band { height: 12px; background: repeating-linear-gradient(45deg, var(--teal) 0 6px, var(--gold) 6px 12px, var(--brick) 12px 18px); opacity: 0.9; }
@@ -861,15 +861,15 @@ function RestaurantTemplateDemo() {
   };
   return h("div", {
     style: {
-      "--ink": "#1C1B18",
-      "--paper": "#F6F1E6",
-      "--gold": "#B8863B",
-      "--brick": "#9C3B2E",
-      "--teal": "#2F6F6B",
-      "--charcoal": "#22201B",
-      "--muted": "#6B6459",
-      "--card": "#FFFFFF",
-      "--border": "#E7DFCF",
+      "--ink": "#0F172A",
+      "--paper": "#FFFFFF",
+      "--gold": "#4F46E5",
+      "--brick": "#DC2626",
+      "--teal": "#0D9488",
+      "--charcoal": "#0F172A",
+      "--muted": "#64748B",
+      "--card": "#F8FAFC",
+      "--border": "#E2E8F0",
       minHeight: "100vh"
     }
   }, mode === "public" ? h(PublicSite, {
@@ -888,19 +888,19 @@ function RestaurantTemplateDemo() {
   }) : h("div", null, h("div", {
     className: "flex items-center justify-between px-4 md:px-8 py-3",
     style: {
-      background: "var(--ink)"
+      background: "#0F172A"
     }
   }, h("span", {
     className: "font-display font-bold text-lg",
     style: {
-      color: "var(--paper)"
+      color: "#fff"
     }
   }, "🧭 Panel de administración"), h("button", {
     onClick: () => setMode("public"),
     className: "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold",
     style: {
-      background: "var(--gold)",
-      color: "var(--ink)"
+      background: "#4F46E5",
+      color: "#fff"
     }
   }, h(Icon, null, "🌐"), " Volver a la web")), h(AdminPanel, {
     adminTab: adminTab,
@@ -948,8 +948,8 @@ function RestaurantTemplateDemo() {
   }), h("p", {
     className: "text-center py-3 text-xs",
     style: {
-      color: "#6d8481",
-      background: "#fbf8f0"
+      color: "#94A3B8",
+      background: "#0F172A"
     }
   }, "Los cambios se guardan automáticamente en este navegador (sin necesidad de conexión a una base de datos externa). Los envíos de WhatsApp abren una conversación real con el mensaje ya escrito.")));
 }
@@ -1110,7 +1110,7 @@ function PublicSite({
         color: "var(--ink)"
       }
     }, heroTitle), heroSubtitle && h("p", {
-      className: "font-display italic text-lg md:text-xl mb-6",
+      className: "text-lg md:text-xl mb-6",
       style: {
         color: "var(--muted)"
       }
@@ -1614,26 +1614,59 @@ function AdminPanel(props) {
     label: "Clientes (CRM)",
     icon: "👥"
   }];
-  return /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col md:flex-row min-h-[600px]",
+  return h("div", {
     style: {
-      background: "#fbf8f0"
-    }
-  }, /*#__PURE__*/React.createElement("nav", {
-    className: "flex md:flex-col gap-1 p-3 md:w-56 overflow-x-auto",
+      "--ink": "#111827",
+      "--paper": "#F3F4F6",
+      "--gold": "#4F46E5",
+      "--brick": "#DC2626",
+      "--teal": "#0D9488",
+      "--charcoal": "#111827",
+      "--muted": "#6B7280",
+      "--card": "#FFFFFF",
+      "--border": "#E5E7EB"
+    },
+    className: "flex flex-col md:flex-row min-h-[600px]"
+  }, h("nav", {
+    className: "flex md:flex-col gap-1 p-3 md:w-60 overflow-x-auto md:min-h-[600px]",
     style: {
-      background: "var(--ink)"
+      background: "#0F172A"
     }
-  }, tabs.map(t => /*#__PURE__*/React.createElement("button", {
+  }, h("div", {
+    className: "hidden md:flex items-center gap-2 px-2 pb-4 mb-2",
+    style: {
+      borderBottom: "1px solid #1E293B"
+    }
+  }, h("div", {
+    className: "w-8 h-8 rounded-lg flex items-center justify-center font-display font-bold text-sm",
+    style: {
+      background: "var(--gold)",
+      color: "#fff"
+    }
+  }, "⚙"), h("span", {
+    className: "text-sm font-semibold",
+    style: {
+      color: "#fff"
+    }
+  }, "Panel admin")), tabs.map(t => h("button", {
     key: t.id,
     onClick: () => setAdminTab(t.id),
     className: "flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap text-left transition",
     style: {
       background: adminTab === t.id ? "var(--gold)" : "transparent",
-      color: adminTab === t.id ? "var(--ink)" : "#cfe0dd"
+      color: adminTab === t.id ? "#fff" : "#94A3B8"
     }
-  }, /*#__PURE__*/React.createElement(Icon, null, t.icon), " ", t.label))), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 p-5 md:p-8"
+  }, h(Icon, null, t.icon), " ", t.label))), h("div", {
+    className: "flex-1 p-4 md:p-8",
+    style: {
+      background: "var(--paper)"
+    }
+  }, h("div", {
+    className: "rounded-2xl p-5 md:p-8 shadow",
+    style: {
+      background: "var(--card)",
+      border: `1px solid var(--border)`
+    }
   }, adminTab === "negocio" && /*#__PURE__*/React.createElement(BusinessTab, {
     business: business,
     setBiz: setBiz
@@ -1683,7 +1716,7 @@ function AdminPanel(props) {
     addCustomer: addCustomer,
     deleteCustomer: deleteCustomer,
     sendWa: sendWa
-  })));
+  }))));
 }
 function GalleryTab({
   gallery,
@@ -1971,7 +2004,7 @@ function Field({
 }
 const inputClass = "w-full px-3 py-2 rounded-lg text-sm border";
 const inputStyle = {
-  borderColor: "#d9cfb4",
+  borderColor: "#E2E8F0",
   color: "var(--charcoal)",
   background: "#fff"
 };
